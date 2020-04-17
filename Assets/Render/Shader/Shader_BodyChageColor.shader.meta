@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 2909eae1370daa644910927320d7b6d6
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _T_AxeSoldier_Normal: {fileID: 2800000, guid: 1dd165aed35cc0d4ab0720359c33cc5e,
+      type: 3}
+  - _T_AxeSoldier_Basecolor: {fileID: 2800000, guid: f733c049562afcf488c91f9a2b81f19e,
+      type: 3}
+  - _T_AxeSoldier_MetallicSmoothness: {fileID: 2800000, guid: 7fe808c43b6e3ac47bc63b6338d750f6,
+      type: 3}
+  nonModifiableTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
