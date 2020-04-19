@@ -64,6 +64,7 @@ public class EnvironmentManager : MonoBehaviour {
 
     public bool isSupportHalf = true;
     public bool isSupportDepthTex = true;
+    public bool isSupportMRT = true;
     public RenderTextureFormat halfFormat;
 
     private Camera mainCam;
@@ -137,6 +138,7 @@ public class EnvironmentManager : MonoBehaviour {
 
         isSupportHalf = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.ARGBHalf);
         isSupportDepthTex = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.Depth);
+        isSupportMRT = SystemInfo.supportedRenderTargetCount > 1;
 
         if (!isSupportHalf || (graphicsSetting && !graphicsSetting.hdr))
             halfFormat = RenderTextureFormat.ARGB32;
@@ -602,6 +604,11 @@ public class EnvironmentManager : MonoBehaviour {
         {
             Shader.globalMaximumLOD = graphicsSetting? graphicsSetting.shaderLod : 500;
         }    
+    }
+
+    public bool MrtEnable()
+    {
+       return graphicsSetting ? isSupportMRT && graphicsSetting.mrt : isSupportMRT;      
     }
 
     //刷新分辨率设置

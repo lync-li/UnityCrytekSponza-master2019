@@ -22,6 +22,7 @@ public class PlayerGraphicsSettingInspector : Editor
         EditorGUILayout.LabelField("角色bloom，角色颜色校正需要启用角色分层");
         EditorGUILayout.LabelField("特效bloom，特效颜色校正需要启用特效分层");
         EditorGUILayout.LabelField("角色分层需要HDR的支持");
+        EditorGUILayout.LabelField("SSR和AO需要MRT支持");
 
         EditorGUILayout.LabelField("---------------------------");
 
@@ -47,6 +48,10 @@ public class PlayerGraphicsSettingInspector : Editor
         EditorGUILayout.Space();
         field = serializedObject.FindProperty("hdr");
         EditorGUILayout.PropertyField(field, new GUIContent("HDR"));
+
+        EditorGUILayout.Space();
+        field = serializedObject.FindProperty("mrt");
+        EditorGUILayout.PropertyField(field, new GUIContent("MRT"));
 
         EditorGUILayout.Space();
         field = serializedObject.FindProperty("shadow");

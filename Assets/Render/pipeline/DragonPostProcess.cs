@@ -27,8 +27,11 @@ public class DragonPostProcess : DragonPostProcessBase {
     public bool forceUpdate = true;
 
     public RenderTexture colorRT;
+    public RenderTexture normalRT;
     public RenderTexture depthRT;
     public RenderTexture depthCopy;
+
+    private RenderBuffer[] bufs = new RenderBuffer[2];
 
     void OnDisable()
     {
@@ -43,6 +46,7 @@ public class DragonPostProcess : DragonPostProcessBase {
     public void CleanRT()
     {
         CommonSet.DeleteRenderTexture(ref colorRT);
+        CommonSet.DeleteRenderTexture(ref normalRT);
         CommonSet.DeleteRenderTexture(ref depthRT);
         CommonSet.DeleteRenderTexture(ref depthCopy);
     }
@@ -89,6 +93,29 @@ public class DragonPostProcess : DragonPostProcessBase {
             colorRT = new RenderTexture(width, height, EnvironmentManager.Instance.isSupportDepthTex ? 0 : 24, EnvironmentManager.Instance.halfFormat, RenderTextureReadWrite.Linear);
             colorRT.autoGenerateMips = false;
             forceUpdate = true;
+        }
+
+        if(EnvironmentManager.Instance.MrtEnable())
+        {
+            if (normalRT)
+            {
+                if (width != normalRT.width || height != normalRT.height)
+                {
+                    CommonSet.DeleteRenderTexture(ref normalRT);
+                }
+            }
+            if (!normalRT)
+            {
+                normalRT = new RenderTexture(width, height,0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+                normalRT.autoGenerateMips = false;
+            }
+
+            bufs[0] = colorRT.colorBuffer;
+            bufs[1] = normalRT.colorBuffer;
+        }
+        else
+        {
+            CommonSet.DeleteRenderTexture(ref normalRT);
         }
 
         if (!EnvironmentManager.Instance.isSupportDepthTex)
@@ -218,9 +245,19 @@ public class DragonPostProcess : DragonPostProcessBase {
             depthCopy.DiscardContents();
 
         if (depthRT)
-            cam.SetTargetBuffers(colorRT.colorBuffer, depthRT.depthBuffer);
+        {
+            if (EnvironmentManager.Instance.MrtEnable() && normalRT)
+                cam.SetTargetBuffers(bufs, depthRT.depthBuffer);
+            else
+                cam.SetTargetBuffers(colorRT.colorBuffer, depthRT.depthBuffer);
+        }            
         else
-            cam.targetTexture = colorRT;
+        {
+            if (EnvironmentManager.Instance.MrtEnable() && normalRT)
+                cam.SetTargetBuffers(bufs, colorRT.depthBuffer);
+            else
+                cam.targetTexture = colorRT;
+        }            
 
         UpdateOpaqueCommandBuffer();
 
