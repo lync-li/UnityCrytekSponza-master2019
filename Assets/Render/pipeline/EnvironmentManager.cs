@@ -606,11 +606,6 @@ public class EnvironmentManager : MonoBehaviour {
         }    
     }
 
-    public bool MrtEnable()
-    {
-       return graphicsSetting ? isSupportMRT && graphicsSetting.mrt : isSupportMRT;      
-    }
-
     //刷新分辨率设置
     public void UpdateResolution(ResolutionLevel level)
     {

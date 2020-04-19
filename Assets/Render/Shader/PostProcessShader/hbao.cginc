@@ -78,8 +78,8 @@ half4 frag_ao(v2f i, UNITY_VPOS_TYPE screenPos : VPOS) : SV_Target {
 		Pb = FetchViewPos(i.uv2 + float2(0, -InvScreenParams.y));
 		float3 N = normalize(cross(MinDiff(P, Pr, Pl), MinDiff(P, Pt, Pb)));
 #else
-	float4 depthNormal = tex2D(_CameraDepthNormalsTexture, i.uv2);
-	float3 N = DecodeViewNormalStereo(depthNormal);
+	float4 normal = tex2D(_NormalBufferTex, i.uv2);
+	float3 N = normal * 2 - 1;
 #endif	
 
 	N = float3(N.x, -N.yz);

@@ -29,8 +29,6 @@ public class PlayerGraphicsSetting: MonoBehaviour
     public bool dynamicQuality = false;
     //HDR
     public bool hdr = true;
-    //MRT
-    public bool mrt = true;  
     //Shadow
     public bool shadow = true;
     //角色分层 
@@ -98,7 +96,6 @@ public class PlayerGraphicsSetting: MonoBehaviour
         displayFPS = false;
         dynamicQuality = false;
         hdr = true;
-        mrt = true;
         shadow = true;
         playerLayer = true;
         alphaBuffer = true;
@@ -183,10 +180,6 @@ public class PlayerGraphicsSetting: MonoBehaviour
         if (!PlayerPrefs.HasKey("hdr"))
         {
             hdr = true;
-        }
-        if (!PlayerPrefs.HasKey("mrt"))
-        {
-            mrt = true;
         }
         if (!PlayerPrefs.HasKey("shadow"))
         {
@@ -287,7 +280,6 @@ public class PlayerGraphicsSetting: MonoBehaviour
         dynamicQuality = PlayerPrefs.GetInt("dynamicQuality") > 0 ? true : false;       
         displayFPS = PlayerPrefs.GetInt("displayFPS") > 0 ? true : false;
         hdr = PlayerPrefs.GetInt("hdr") > 0 ? true : false;
-        mrt = PlayerPrefs.GetInt("mrt") > 0 ? true : false;
         shadow = PlayerPrefs.GetInt("shadow") > 0 ? true : false;
         playerLayer = PlayerPrefs.GetInt("playerLayer") > 0 ? true : false;
         alphaBuffer = PlayerPrefs.GetInt("alphaBuffer") > 0 ? true : false;

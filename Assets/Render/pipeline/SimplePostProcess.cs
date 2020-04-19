@@ -51,8 +51,6 @@ public class SimplePostProcess: DragonPostProcessBase {
         if(GetDirty() || forceUpdate)
         {
             cam.depthTextureMode = DepthTextureMode.None;
-            if (mProperty.ambientOcclusion)
-                cam.depthTextureMode = DepthTextureMode.DepthNormals;
 
             mProperty.alphaBuffer = false;
             mProperty.playerLayer = false;

@@ -50,10 +50,6 @@ public class PlayerGraphicsSettingInspector : Editor
         EditorGUILayout.PropertyField(field, new GUIContent("HDR"));
 
         EditorGUILayout.Space();
-        field = serializedObject.FindProperty("mrt");
-        EditorGUILayout.PropertyField(field, new GUIContent("MRT"));
-
-        EditorGUILayout.Space();
         field = serializedObject.FindProperty("shadow");
         EditorGUILayout.PropertyField(field, new GUIContent("阴影"));
 

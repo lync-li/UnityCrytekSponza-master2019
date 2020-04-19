@@ -35,7 +35,7 @@ public class DragonPostProcess : DragonPostProcessBase {
 
     void OnDisable()
     {
-        CommonSet.ClearCommandBuffer(cam,ref opaqueCB, CameraEvent.AfterSkybox);
+        CommonSet.ClearCommandBuffer(cam,ref opaqueCB, CameraEvent.BeforeForwardAlpha);
     }
 
     void OnDestroy()
@@ -71,7 +71,7 @@ public class DragonPostProcess : DragonPostProcessBase {
         }
         //else
         //{
-        //    CommonSet.ClearCommandBuffer(cam,ref opaqueCB, CameraEvent.AfterSkybox);
+        //    CommonSet.ClearCommandBuffer(cam,ref opaqueCB, CameraEvent.BeforeForwardAlpha);
         //}
     }
 
@@ -95,7 +95,7 @@ public class DragonPostProcess : DragonPostProcessBase {
             forceUpdate = true;
         }
 
-        if(EnvironmentManager.Instance.MrtEnable())
+        if(NormalBufferEnable())
         {
             if (normalRT)
             {
@@ -164,8 +164,11 @@ public class DragonPostProcess : DragonPostProcessBase {
             base.InitLowwwer();
 
             cam.depthTextureMode = DepthTextureMode.None;
-            if (mProperty.ambientOcclusion)
-                cam.depthTextureMode = DepthTextureMode.DepthNormals;
+
+            if(NormalBufferEnable())
+                Shader.EnableKeyword("_MRT");
+            else
+                Shader.DisableKeyword("_MRT");
 
             int effectLayer = LayerMask.NameToLayer("EffectLayer");
             int distortionLayer = LayerMask.NameToLayer("AirDistortion");
@@ -246,14 +249,14 @@ public class DragonPostProcess : DragonPostProcessBase {
 
         if (depthRT)
         {
-            if (EnvironmentManager.Instance.MrtEnable() && normalRT)
+            if (NormalBufferEnable() && normalRT)
                 cam.SetTargetBuffers(bufs, depthRT.depthBuffer);
             else
                 cam.SetTargetBuffers(colorRT.colorBuffer, depthRT.depthBuffer);
         }            
         else
         {
-            if (EnvironmentManager.Instance.MrtEnable() && normalRT)
+            if (NormalBufferEnable() && normalRT)
                 cam.SetTargetBuffers(bufs, colorRT.depthBuffer);
             else
                 cam.targetTexture = colorRT;
@@ -279,8 +282,8 @@ public class DragonPostProcess : DragonPostProcessBase {
             return;
         else if (initOpaqueCB)
         {
-            CommonSet.ClearCommandBuffer(cam,ref opaqueCB, CameraEvent.AfterSkybox);
-            cam.AddCommandBuffer(CameraEvent.AfterSkybox, opaqueCB);
+            CommonSet.ClearCommandBuffer(cam,ref opaqueCB, CameraEvent.BeforeForwardAlpha);
+            cam.AddCommandBuffer(CameraEvent.BeforeForwardAlpha, opaqueCB);
             PrepareOpaqueCB(opaqueCB);
 
             initOpaqueCB = false;
@@ -303,6 +306,7 @@ public class DragonPostProcess : DragonPostProcessBase {
             bool debug = false;
             if (AmbientOcclusionEnable())
             {
+                cb.SetGlobalTexture(CommonSet.ShaderProperties.normalBufferTex, normalRT.colorBuffer);
                 PrepareHBAO(cb, colorRT);
                 if (mProperty.debugAO) debug = true;
             }

@@ -190,6 +190,7 @@ public class CommonSet : MonoBehaviour{
         public static int simpleCopyTex = Shader.PropertyToID("_SimpleCopyTex");
 
         public static int cameraDepthTex = Shader.PropertyToID("_CameraDepthTexture");
+        public static int normalBufferTex = Shader.PropertyToID("_NormalBufferTex");
 
     }
     #endregion 

@@ -95,6 +95,7 @@ Shader "Extend/Standard"
 			#pragma shader_feature _RECEIVEFOG
 			
 			#pragma multi_compile __ _ALPHABUFFER
+			#pragma multi_compile __ _MRT
 			//#pragma multi_compile __ _HEIGHTFOG
 
 			#pragma multi_compile_fwdbase

@@ -2012,7 +2012,7 @@ public class DragonPostProcessBase : MonoBehaviour {
     }
     public bool AmbientOcclusionEnable()
     {
-        bool ambientOcclusion = mMaterialAmbientOcclusion && mProperty.ambientOcclusion;
+        bool ambientOcclusion = mMaterialAmbientOcclusion && mProperty.ambientOcclusion && EnvironmentManager.Instance.isSupportMRT;
 
         if (graphicsSetting)
         {
@@ -2020,6 +2020,11 @@ public class DragonPostProcessBase : MonoBehaviour {
         }
 
         return ambientOcclusion;
+    }
+
+    public bool NormalBufferEnable()
+    {
+        return AmbientOcclusionEnable();
     }
     public bool LumaOcclusionEnable()
     {

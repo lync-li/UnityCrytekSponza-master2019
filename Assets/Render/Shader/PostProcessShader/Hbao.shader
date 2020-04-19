@@ -24,7 +24,7 @@
 		float4 _MainTex_TexelSize;
 
 		sampler2D_float _CameraDepthTexture;
-		sampler2D _CameraDepthNormalsTexture;
+		sampler2D _NormalBufferTex;
 		
 		sampler2D_float _NoiseTex;
 

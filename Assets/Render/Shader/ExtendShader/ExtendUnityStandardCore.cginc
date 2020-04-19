@@ -482,6 +482,12 @@ animData GetBlendAnimPos(VertexInput v) {
 }
 #endif
 
+struct FragmentOutput
+{
+    half4 dest0 : SV_Target0;
+    half4 dest1 : SV_Target1;
+};
+
 float3 waveCalc(float3 worldPos)
 {	
 	UNITY_BRANCH
@@ -595,7 +601,11 @@ VertexOutputForwardBase vertForwardBase(VertexInput v)
     return o;
 }
 
+#if _MRT
+FragmentOutput fragForwardBaseInternal (VertexOutputForwardBase i)
+#else
 half4 fragForwardBaseInternal (VertexOutputForwardBase i)
+#endif
 {
     UNITY_APPLY_DITHER_CROSSFADE(i.pos.xy);
 
@@ -700,14 +710,17 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
 		
 	//color.rgb = s.normalWorld;
 	
+#if _MRT
+	FragmentOutput o;
+	o.dest0 = color;
+	o.dest1 = half4(s.normalWorld * 0.5 + 0.5,s.smoothness);
+	return o;
+#else
 	return color;
+#endif
+	
     
 	//return i.tangentToWorldAndPackedData[1] * 2 - 1;
-}
-
-half4 fragForwardBase(VertexOutputForwardBase i) : SV_Target // backward compatibility (this used to be the fragment entry function)
-{
-    return fragForwardBaseInternal(i);
 }
 
 // ------------------------------------------------------------------
@@ -802,7 +815,11 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
     return o;
 }
 
+#if _MRT
+FragmentOutput fragForwardAddInternal (VertexOutputForwardAdd i)
+#else
 half4 fragForwardAddInternal (VertexOutputForwardAdd i)
+#endif
 {
     UNITY_APPLY_DITHER_CROSSFADE(i.pos.xy);
 	
@@ -844,14 +861,17 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i)
 	c.rgb = lerp(c.rgb,half4(0,0,0,0), saturate(i.heightFog.a));
 #endif
 
-    return OutputForward (c, s.alpha);
-}
+	half4 color = OutputForward(c, s.alpha);
 
-half4 fragForwardAdd (VertexOutputForwardAdd i) : SV_Target     // backward compatibility (this used to be the fragment entry function)
-{
-    return fragForwardAddInternal(i);
+#if _MRT
+	FragmentOutput o;
+	o.dest0 = color;
+	o.dest1 = half4(s.normalWorld * 0.5 + 0.5,s.smoothness);
+	return o;
+#else
+	return color;
+#endif
 }
-
 //
 // Old FragmentGI signature. Kept only for backward compatibility and will be removed soon
 //
