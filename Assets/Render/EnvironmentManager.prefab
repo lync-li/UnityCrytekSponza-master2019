@@ -4004,6 +4004,7 @@ MonoBehaviour:
   distortionPass: {fileID: 0}
   isSupportHalf: 1
   isSupportDepthTex: 1
+  isSupportMRT: 1
   halfFormat: 2
 --- !u!1 &2686867177975017202
 GameObject:
