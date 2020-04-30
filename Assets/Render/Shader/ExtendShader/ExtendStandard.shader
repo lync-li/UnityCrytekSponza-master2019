@@ -44,6 +44,10 @@ Shader "Extend/Standard"
 		
 		[Toggle(_RECEIVEFOG)] _ReceiveFog("receiveFog", Float) = 1	
 
+		[Toggle(_RIMENABLE)] _RimEnable("rimEnable", Float) = 0
+		[HDR]_RimColor("rimColor", Color) = (1,1,1,1)
+		_RimPower("rimPower", Range(1, 30)) = 5
+
 		// Blending state
 		[HideInInspector] _Mode("__mode", Float) = 0.0
 		[HideInInspector] _SrcBlend("__src", Float) = 1.0
@@ -93,6 +97,7 @@ Shader "Extend/Standard"
 			#pragma shader_feature _EXTENDALPHA
 			#pragma shader_feature _PLAYER
 			#pragma shader_feature _RECEIVEFOG
+			#pragma shader_feature _RIMENABLE
 			
 			#pragma multi_compile __ _ALPHABUFFER
 			#pragma multi_compile __ _MRT

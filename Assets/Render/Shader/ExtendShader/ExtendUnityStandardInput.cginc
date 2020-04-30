@@ -64,11 +64,14 @@ float4 		_rim_color;
 float 		_rim_power;
 #endif
 
-half4  _HeightFogColor;	
-half4  _HeightFogEmissionColor;	
-half4  _HeightFogParam;
-half4  _HeightFogWave0;
-half4  _HeightFogWave1;
+half4       _RimColor;
+half        _RimPower;
+
+half4       _HeightFogColor;	
+half4       _HeightFogEmissionColor;	
+half4       _HeightFogParam;
+half4       _HeightFogWave0;
+half4       _HeightFogWave1;
 
 UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
 

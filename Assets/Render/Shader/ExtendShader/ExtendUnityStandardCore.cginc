@@ -668,7 +668,12 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
     
 
     c.rgb += Emission(i.tex.xy);
-	
+
+#if _RIMENABLE
+    float rim = 1 - max(0, dot(-s.eyeVec, s.normalWorld));
+    c.rgb +=  _RimColor * pow(rim, _RimPower);
+#endif
+
 #if _BODYCHANGECOLOR
 	#if _GPURIM
 		float rimRange = UNITY_ACCESS_INSTANCED_PROP(Props, _rim_range);

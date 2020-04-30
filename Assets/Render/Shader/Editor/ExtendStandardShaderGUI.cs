@@ -46,6 +46,9 @@ namespace UnityEditor
             public static GUIContent doubleSideText = EditorGUIUtility.TrTextContent("双面", "DoubleSide");
             public static GUIContent zWriteText = EditorGUIUtility.TrTextContent("深度写入", "ZWrite");
             public static GUIContent receiveFogText = EditorGUIUtility.TrTextContent("雾效影响", "ReceiveFog");
+            public static GUIContent rimEnableText = EditorGUIUtility.TrTextContent("Rim开启", "Rim开启");
+            public static GUIContent rimColorText = EditorGUIUtility.TrTextContent("RimColor", "RimColor");
+            public static GUIContent rimPowerText = EditorGUIUtility.TrTextContent("RimPower", "RimPower");
 
             public static string primaryMapsText = "Main Maps";
             public static string secondaryMapsText = "Secondary Maps";
@@ -82,6 +85,9 @@ namespace UnityEditor
         MaterialProperty doubleSide = null;
         MaterialProperty zWrite = null;
         MaterialProperty receiveFog = null;
+        MaterialProperty rimEnable = null;
+        MaterialProperty rimColor = null;
+        MaterialProperty rimPower = null;
 
 
         MaterialProperty uvSetSecondary = null;
@@ -123,6 +129,10 @@ namespace UnityEditor
             doubleSide = FindProperty("_Cull", props);
             zWrite = FindProperty("_ZWrite", props);
             receiveFog = FindProperty("_ReceiveFog", props);
+
+            rimEnable = FindProperty("_RimEnable", props);
+            rimColor = FindProperty("_RimColor", props);
+            rimPower = FindProperty("_RimPower", props);
 
             uvSetSecondary = FindProperty("_UVSec", props);
         }
@@ -181,7 +191,7 @@ namespace UnityEditor
                     m_MaterialEditor.ShaderProperty(vertexAlpha, Styles.vertexAlphaText.text);
                     if (vertexAlpha.floatValue == 1)
                     {
-                        m_MaterialEditor.ShaderProperty(vertexAlphaValue, Styles.vertexAlphaValueText.text, MaterialEditor.kMiniTextureFieldLabelIndentLevel + 1);
+                        m_MaterialEditor.ShaderProperty(vertexAlphaValue, Styles.vertexAlphaValueText.text, MaterialEditor.kMiniTextureFieldLabelIndentLevel);
                     }
 
                     m_MaterialEditor.ShaderProperty(extendAlpha, Styles.extendAlphaText.text);
@@ -200,7 +210,11 @@ namespace UnityEditor
                 m_MaterialEditor.TexturePropertySingleLine(Styles.occlusionText, occlusionMap, occlusionMap.textureValue != null ? occlusionStrength : null);
                 m_MaterialEditor.TexturePropertySingleLine(Styles.detailMaskText, detailMask);
                 DoEmissionArea(material);
+                DoRimArea(material);
                 EditorGUI.BeginChangeCheck();
+
+                EditorGUILayout.Space();
+
                 m_MaterialEditor.TextureScaleOffsetProperty(albedoMap);
                 if (EditorGUI.EndChangeCheck())
                     emissionMap.textureScaleAndOffset = albedoMap.textureScaleAndOffset; // Apply the main texture scale and offset to the emission texture as well, for Enlighten's sake
@@ -353,6 +367,16 @@ namespace UnityEditor
             }
         }
 
+        void DoRimArea(Material material)
+        {
+            m_MaterialEditor.ShaderProperty(rimEnable, Styles.rimEnableText.text);
+            if (rimEnable.floatValue == 1)
+            {
+                m_MaterialEditor.ShaderProperty(rimColor, Styles.rimColorText.text, MaterialEditor.kMiniTextureFieldLabelIndentLevel);
+                m_MaterialEditor.ShaderProperty(rimPower, Styles.rimPowerText.text, MaterialEditor.kMiniTextureFieldLabelIndentLevel);
+            }           
+        }
+
         void DoSpecularMetallicArea()
         {
             bool hasGlossMap = false;   
@@ -466,11 +490,9 @@ namespace UnityEditor
 
             SetKeyword(material, "_EXTENDALPHA", (BlendMode)material.GetFloat("_Mode") == BlendMode.Transparent && material.GetFloat("_ExtendAlpha") == 1);
 			
-			SetKeyword(material, "_PLAYER", ((BlendMode)material.GetFloat("_Mode") == BlendMode.Opaque && material.GetFloat("_Player") == 1));
-            SetKeyword(material, "_PLAYER", ((BlendMode)material.GetFloat("_Mode") == BlendMode.Cutout && material.GetFloat("_Player") == 1));
+			SetKeyword(material, "_PLAYER", ((BlendMode)material.GetFloat("_Mode") == BlendMode.Opaque || (BlendMode)material.GetFloat("_Mode") == BlendMode.Cutout) && material.GetFloat("_Player") == 1);
 
-            SetKeyword(material, "_VERTEXALPHA", (BlendMode)material.GetFloat("_Mode") == BlendMode.Transparent && material.GetFloat("_VertexAlpha") == 1);
-            SetKeyword(material, "_VERTEXALPHA", (BlendMode)material.GetFloat("_Mode") == BlendMode.Fade && material.GetFloat("_VertexAlpha") == 1);
+            SetKeyword(material, "_VERTEXALPHA", ((BlendMode)material.GetFloat("_Mode") == BlendMode.Transparent || (BlendMode)material.GetFloat("_Mode") == BlendMode.Fade) && material.GetFloat("_VertexAlpha") == 1);
         }
 
         static void MaterialChanged(Material material)
