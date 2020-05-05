@@ -30,6 +30,7 @@ public class DragonPostProcess : DragonPostProcessBase {
     public RenderTexture normalRT;
     public RenderTexture depthRT;
     public RenderTexture depthCopy;
+    public RenderTexture depthBackUp;
 
     private RenderBuffer[] bufs = new RenderBuffer[2];
 
@@ -49,6 +50,7 @@ public class DragonPostProcess : DragonPostProcessBase {
         CommonSet.DeleteRenderTexture(ref normalRT);
         CommonSet.DeleteRenderTexture(ref depthRT);
         CommonSet.DeleteRenderTexture(ref depthCopy);
+        CommonSet.DeleteRenderTexture(ref depthBackUp);
     }
 
 
@@ -150,10 +152,34 @@ public class DragonPostProcess : DragonPostProcessBase {
                 RenderTextureFormat depthRawFormat = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.RFloat) ? RenderTextureFormat.RFloat : RenderTextureFormat.RHalf;
                 depthCopy = new RenderTexture(width, height, 0, depthRawFormat, RenderTextureReadWrite.Linear);
                 depthCopy.filterMode = FilterMode.Point;
-                depthRT.useMipMap = true;
-                depthRT.autoGenerateMips = true;
+                depthCopy.useMipMap = true;
+                depthCopy.autoGenerateMips = true;
+                forceUpdate = true;
+            }            
+        }
+
+        if (StochasticSSREnable())
+        {
+            if (depthBackUp)
+            {
+                if (width != depthBackUp.width || height != depthBackUp.height)
+                {
+                    CommonSet.DeleteRenderTexture(ref depthBackUp);
+                }
+            }
+            if (!depthBackUp)
+            {
+                RenderTextureFormat depthRawFormat = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.RFloat) ? RenderTextureFormat.RFloat : RenderTextureFormat.RHalf;
+                depthBackUp = new RenderTexture(width, height, 0, depthRawFormat, RenderTextureReadWrite.Linear);
+                depthBackUp.filterMode = FilterMode.Point;
+                depthBackUp.useMipMap = true;
+                depthBackUp.autoGenerateMips = false;
                 forceUpdate = true;
             }
+        }
+        else
+        {
+            CommonSet.DeleteRenderTexture(ref depthBackUp);
         }
     }
 
@@ -324,6 +350,9 @@ public class DragonPostProcess : DragonPostProcessBase {
                 PrepareLumaOcclusion(cb, colorRT);
                 if (mProperty.showLO) debug = true;
             }
+            if(StochasticSSREnable())
+                PrepareStochasticSSR(cb);
+
             cb.SetRenderTarget(colorTexID);
             if (debug)
                 cb.DrawMesh(CommonSet.fullscreenTriangle, Matrix4x4.identity, mMaterialOpaque, 0, 1);
@@ -338,6 +367,8 @@ public class DragonPostProcess : DragonPostProcessBase {
                 FinishCloudShadow(cb);
             if (LumaOcclusionEnable())
                 FinishLumaOcclusion(cb);
+            if (StochasticSSREnable())
+                FinishStochasticSSR(cb);
         }
 
         if (VolumetricFogEnable())
@@ -466,6 +497,21 @@ public class DragonPostProcess : DragonPostProcessBase {
         //sceneCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, BuiltinRenderTextureType.CameraTarget, mMaterialCloudShadow, 0);
     }
     void FinishCloudShadow(CommandBuffer cb)
+    {
+
+    }
+    void PrepareStochasticSSR(CommandBuffer cb)
+    {
+        for (int i = 1; i < mProperty.hierarchicalZLevel; ++i)
+        {
+            cb.SetGlobalTexture(CommonSet.ShaderProperties.hiZbufferTex, depthCopy);
+            cb.SetGlobalInt(CommonSet.ShaderProperties.hiZbufferLevel, i - 1);
+            cb.SetRenderTarget(depthBackUp, i);
+            cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0, (int)StochasticSSRPass.HiZBuffer);
+            cb.CopyTexture(depthBackUp, 0, i, depthCopy, 0, i);
+        }
+    }
+    void FinishStochasticSSR(CommandBuffer cb)
     {
 
     }

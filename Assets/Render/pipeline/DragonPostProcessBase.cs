@@ -21,13 +21,11 @@ public class DragonPostProcessBase : MonoBehaviour {
         ForDOFWithAlphaPlayer,
         Simple
     }
-
     public enum DownSample
     {
         DownSample = 0,
         HasBloomDownSample,
     }
-
     public enum HBAOPass
     {
         OcclusionLowest = 0,
@@ -39,7 +37,6 @@ public class DragonPostProcessBase : MonoBehaviour {
         Final,
         Debug,
     }
-
     public enum VolumetricFogPass
     {
         All = 0,
@@ -47,7 +44,6 @@ public class DragonPostProcessBase : MonoBehaviour {
         Compose,
         ComposeEdgeImprove,
     }
-
     public enum LumaOcclusionPass
     {
         LumaLow = 0,
@@ -56,7 +52,6 @@ public class DragonPostProcessBase : MonoBehaviour {
         LumaBlurX,
         LumaBlurY,
     }
-
     public enum BokehDOFPass
     {
         COC = 0,
@@ -67,7 +62,6 @@ public class DragonPostProcessBase : MonoBehaviour {
         FilterVeryLarge,
         PostFilter,
     }
-
     public enum FastDOFPass
     {
         COC = 0,
@@ -75,22 +69,23 @@ public class DragonPostProcessBase : MonoBehaviour {
         FragBlurH,
         FragBlurV
     }
-
     public enum bloomPass
     {
         BloomThreshold = 0,
         BloomUpSample,
         BloomWithColorGrading
     }
-
     public enum GenLutPass
     {
         GenLut = 0,
     }
-
     public enum FinalPass
     {
         AA = 0,
+    }
+    public enum StochasticSSRPass
+    {
+        HiZBuffer = 0,
     }
     #endregion
 
@@ -643,6 +638,9 @@ public class DragonPostProcessBase : MonoBehaviour {
 
         //SSRR
         public bool stochasticScreenSpaceReflection = false;
+        [Range(4, 10)]
+        public int hierarchicalZLevel = 10;
+
 
         public bool Diff(Property other)
         {
@@ -1888,6 +1886,8 @@ public class DragonPostProcessBase : MonoBehaviour {
         if (CloudShadowEnable())
             return true;
         if (AmbientOcclusionEnable())
+            return true;
+        if (StochasticSSREnable())
             return true;
 
         return false;

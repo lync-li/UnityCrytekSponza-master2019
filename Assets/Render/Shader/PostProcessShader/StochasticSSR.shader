@@ -11,13 +11,15 @@
 
 		Pass 
 		{
-			Name"Pass_HierarchicalZBuffer_Pass"
+			Name"HierarchicalZBuffer"
 			CGPROGRAM
-				#pragma vertex vert
+				#pragma vertex VertDefault
 				#pragma fragment Hierarchical_ZBuffer
 			ENDCG
 		}	
 
+
+/*
 		Pass 
 		{
 			Name"Pass_Hierarchical_ZTrace_SingleSampler"
@@ -89,7 +91,10 @@
 				#pragma vertex vert
 				#pragma fragment DeBug_SSRColor
 			ENDCG
-		}
+		}		
+		
+		*/
+		
 		
 	}
 }

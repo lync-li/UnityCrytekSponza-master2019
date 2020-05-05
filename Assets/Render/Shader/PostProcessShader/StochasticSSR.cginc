@@ -1,5 +1,4 @@
-#include "UnityCG.cginc"
-#include "../../../Common/Shaders/Resources/Include_HLSL.hlsl"
+#include "PostProcessCommon.cginc"
 
 #ifndef HiZ_Method_Advanced
     #define HiZ_Method_Advanced 0
@@ -13,8 +12,7 @@
     #define AA_BicubicFilter 0
 #endif
 
-sampler2D _SSR_SceneColor_RT, _SSR_Noise, _SSR_PreintegratedGF_LUT, _SSR_RayCastRT, _SSR_RayMask_RT, _SSR_Spatial_RT, _SSR_TemporalPrev_RT, _SSR_TemporalCurr_RT, _SSR_CombienReflection_RT, _SSAO_GTOTexture2SSR_RT,
-		  _CameraDepthTexture, _CameraMotionVectorsTexture, _CameraGBufferTexture0, _CameraGBufferTexture1, _CameraGBufferTexture2, _CameraReflectionsTexture;
+	      
 
 Texture2D _SSR_HierarchicalDepth_RT; SamplerState sampler_SSR_HierarchicalDepth_RT;
 
@@ -28,25 +26,38 @@ half4 _SSR_ScreenSize, _SSR_RayCastSize, _SSR_NoiseSize, _SSR_Jitter, _SSR_Rando
 
 half4x4 _SSR_ProjectionMatrix, _SSR_InverseProjectionMatrix, _SSR_ViewProjectionMatrix, _SSR_InverseViewProjectionMatrix, _SSR_LastFrameViewProjectionMatrix, _SSR_WorldToCameraMatrix, _SSR_CameraToWorldMatrix, _SSR_ProjectToPixelMatrix;
 
-struct VertexInput
-{
-	half4 vertex : POSITION;
-	half4 uv : TEXCOORD0;
-};
 
-struct PixelInput
-{
-	half4 vertex : SV_POSITION;
-	half4 uv : TEXCOORD0;
-};
 
-PixelInput vert(VertexInput v)
-{
-	PixelInput o;
-	o.vertex = v.vertex;
-	o.uv = v.uv;
-	return o;
+int _HiZbufferLevel;
+Texture2D _HiZbufferTex;
+SamplerState sampler_HiZbufferTex;
+
+
+
+
+float Hierarchical_ZBuffer(v2f i) : SV_Target {
+	float2 uv = i.texcoord0.xy;	
+	
+    half4 minDepth;
+	//minDepth.x = tex2Dlod(_CameraDepthTexture,float4(uv + _CameraDepthTexture_TexelSize.xy * float2(-1,-1),0,hiZbufferLevel)).r;
+	//minDepth.y = tex2Dlod(_CameraDepthTexture,float4(uv + _CameraDepthTexture_TexelSize.xy * float2(-1,1),0,hiZbufferLevel)).r;
+	//minDepth.z = tex2Dlod(_CameraDepthTexture,float4(uv + _CameraDepthTexture_TexelSize.xy * float2(1,-1),0,hiZbufferLevel)).r;
+	//minDepth.w = tex2Dlod(_CameraDepthTexture,float4(uv + _CameraDepthTexture_TexelSize.xy * float2(1,-1),0,hiZbufferLevel)).r;
+	
+	minDepth.x = _HiZbufferTex.SampleLevel(sampler_HiZbufferTex,uv, _HiZbufferLevel,int2(-1,-1)).r;
+	minDepth.y = _HiZbufferTex.SampleLevel(sampler_HiZbufferTex,uv, _HiZbufferLevel,int2(-1,1)).r;
+	minDepth.z = _HiZbufferTex.SampleLevel(sampler_HiZbufferTex,uv, _HiZbufferLevel,int2(1,-1)).r;
+	minDepth.w = _HiZbufferTex.SampleLevel(sampler_HiZbufferTex,uv, _HiZbufferLevel,int2(1,-1)).r;
+	
+	//_SSR_HierarchicalDepth_RT.SampleLevel( sampler_SSR_HierarchicalDepth_RT, uv, _SSR_HiZ_PrevDepthLevel, int2(-1.0,-1.0) ).r,
+     //   _SSR_HierarchicalDepth_RT.SampleLevel( sampler_SSR_HierarchicalDepth_RT, uv, _SSR_HiZ_PrevDepthLevel, int2(-1.0, 1.0) ).r,
+     //   _SSR_HierarchicalDepth_RT.SampleLevel( sampler_SSR_HierarchicalDepth_RT, uv, _SSR_HiZ_PrevDepthLevel, int2(1.0, -1.0) ).r,
+     //   _SSR_HierarchicalDepth_RT.SampleLevel( sampler_SSR_HierarchicalDepth_RT, uv, _SSR_HiZ_PrevDepthLevel, int2(1.0, 1.0) ).r
+
+	return max( max(minDepth.x, minDepth.y), max(minDepth.z, minDepth.w) );
 }
+
+/*
 
 half SSR_BRDF(half3 V, half3 L, half3 N, half Roughness)
 {
@@ -61,23 +72,6 @@ half SSR_BRDF(half3 V, half3 L, half3 N, half Roughness)
 
 	return max(0, D * G);
 }
-
-////////////////////////////////-----Get Hierarchical_ZBuffer-----------------------------------------------------------------------------
-
-float Hierarchical_ZBuffer(PixelInput i) : SV_Target {
-	float2 uv = i.uv.xy;
-	
-    half4 minDepth = half4(
-        _SSR_HierarchicalDepth_RT.SampleLevel( sampler_SSR_HierarchicalDepth_RT, uv, _SSR_HiZ_PrevDepthLevel, int2(-1.0,-1.0) ).r,
-        _SSR_HierarchicalDepth_RT.SampleLevel( sampler_SSR_HierarchicalDepth_RT, uv, _SSR_HiZ_PrevDepthLevel, int2(-1.0, 1.0) ).r,
-        _SSR_HierarchicalDepth_RT.SampleLevel( sampler_SSR_HierarchicalDepth_RT, uv, _SSR_HiZ_PrevDepthLevel, int2(1.0, -1.0) ).r,
-        _SSR_HierarchicalDepth_RT.SampleLevel( sampler_SSR_HierarchicalDepth_RT, uv, _SSR_HiZ_PrevDepthLevel, int2(1.0, 1.0) ).r
-    );
-
-	return max( max(minDepth.r, minDepth.g), max(minDepth.b, minDepth.a) );
-}
-
-
 ////////////////////////////////-----Hierarchical_ZTrace Sampler-----------------------------------------------------------------------------
 void Hierarchical_ZTrace_SingleSPP(PixelInput i, out half4 RayHit_PDF : SV_Target0, out half4 Mask : SV_Target1)
 {
@@ -505,3 +499,4 @@ float4 TestSSGi_MultiSPP(PixelInput i) : SV_Target
 
 	return half4(SSGi, Out_Mask);
 }
+*/

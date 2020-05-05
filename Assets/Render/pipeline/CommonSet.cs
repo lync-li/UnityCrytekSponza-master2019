@@ -192,6 +192,8 @@ public class CommonSet : MonoBehaviour{
         public static int cameraDepthTex = Shader.PropertyToID("_CameraDepthTexture");
         public static int normalBufferTex = Shader.PropertyToID("_NormalBufferTex");
 
+        public static int hiZbufferTex = Shader.PropertyToID("_HiZbufferTex");
+        public static int hiZbufferLevel = Shader.PropertyToID("_HiZbufferLevel");
     }
     #endregion 
    
