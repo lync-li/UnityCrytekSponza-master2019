@@ -641,6 +641,9 @@ public class DragonPostProcessBase : MonoBehaviour {
         public float cloudSpeed = 0.5f;
         public Vector2 cloudDirection;
 
+        //SSRR
+        public bool stochasticScreenSpaceReflection = false;
+
         public bool Diff(Property other)
         {
             if (this.alphaBuffer != other.alphaBuffer)
@@ -737,6 +740,9 @@ public class DragonPostProcessBase : MonoBehaviour {
 
             if (this.chromaticAberration != other.chromaticAberration || this.chromaticAberrationType != other.chromaticAberrationType || this.chromaAmount != other.chromaAmount
                 || this.redOffset != other.redOffset || this.blueOffset != other.blueOffset)
+                return true;
+
+            if (this.stochasticScreenSpaceReflection != other.stochasticScreenSpaceReflection)
                 return true;
 
             return false;
@@ -869,6 +875,8 @@ public class DragonPostProcessBase : MonoBehaviour {
             this.chromaAmount = other.chromaAmount;
             this.redOffset = other.redOffset;
             this.blueOffset = other.blueOffset;
+
+            this.stochasticScreenSpaceReflection = other.stochasticScreenSpaceReflection;
         }
     };
     #endregion
@@ -939,6 +947,7 @@ public class DragonPostProcessBase : MonoBehaviour {
     [NonSerialized] public Material mMaterialHeightFog = null;
     [NonSerialized] public Material mMaterialLumaOcclusion = null;
     [NonSerialized] public Material mMaterialCloudShadow = null;
+    [NonSerialized] public Material mMaterialStochasticSSR = null;
     [NonSerialized] public Material mMaterialFXAA = null;
 
     public Material uberMaterial = null;
@@ -1034,6 +1043,7 @@ public class DragonPostProcessBase : MonoBehaviour {
         CommonSet.CreateMaterial("Hidden/DragonGenLut", ref mMaterialSceneGenLut);
         CommonSet.CreateMaterial("Hidden/DragonGenLut", ref mMaterialAlphaGenLut);
         CommonSet.CreateMaterial("Hidden/DragonGenLut", ref mMaterialPlayerGenLut);
+        CommonSet.CreateMaterial("Hidden/DragonStochasticSSR", ref mMaterialStochasticSSR);
     }
 
     void DeleteMaterial()
@@ -1053,6 +1063,7 @@ public class DragonPostProcessBase : MonoBehaviour {
         CommonSet.DeleteMaterial(ref mMaterialCloudShadow);
         CommonSet.DeleteMaterial(ref mMaterialDOF);
         CommonSet.DeleteMaterial(ref mMaterialRadialBlur);
+        CommonSet.DeleteMaterial(ref mMaterialStochasticSSR);
         CommonSet.DeleteMaterial(ref mMaterialFXAA);
     }
 
@@ -1510,8 +1521,7 @@ public class DragonPostProcessBase : MonoBehaviour {
             mProperty.antialiasing = false;
           //  mProperty.bloom.bloom = false;          
         }
-    }
-    
+    }    
     void InitBloom()
     {
         bool sceneBloomOn = SceneBloomEnable();
@@ -1543,7 +1553,6 @@ public class DragonPostProcessBase : MonoBehaviour {
         uberMaterial.SetFloat(CommonSet.ShaderProperties.playerBloomIntensity, mProperty.playerBloom.bloomIntensity);
         mMaterialPlayerBloom.SetFloat(CommonSet.ShaderProperties.playerBloomIntensity, mProperty.playerBloom.bloomIntensity);
     }
-
     void SetBloom(Material bloomMaterial,Property.BloomProperty property,bool enable)
     {
         if (bloomMaterial == null)
@@ -1561,7 +1570,6 @@ public class DragonPostProcessBase : MonoBehaviour {
             bloomMaterial.SetVector(CommonSet.ShaderProperties.bloomCurve, new Vector4(10,0,0,100));
         }      
     }    
-
     void InitAmbientOcclusion()
     {
         if (AmbientOcclusionEnable())
@@ -1595,7 +1603,6 @@ public class DragonPostProcessBase : MonoBehaviour {
             mMaterialOpaque.DisableKeyword("HBAO");
         }
     }
-
     void InitCloudShadow()
     {
         bool enable = CloudShadowEnable();
@@ -1611,7 +1618,6 @@ public class DragonPostProcessBase : MonoBehaviour {
 
         CommonSet.SetMaterialKeyword(ref mMaterialOpaque, "CLOUDSHADOW", enable);
     }
-
     void InitVolumetricFog()
     {
         bool enable = VolumetricFogEnable();
@@ -1637,7 +1643,6 @@ public class DragonPostProcessBase : MonoBehaviour {
 
        // CommonSet.SetMaterialKeyword(ref mMaterialOpaque, "VFOG", enable);
     }
-
     void InitHeightFog()
     {
         bool enable = HeightFogEnable();
@@ -1662,7 +1667,6 @@ public class DragonPostProcessBase : MonoBehaviour {
         else
             Shader.DisableKeyword("_HEIGHTFOG");      
     }
-
     void InitDepthOfFiled()
     {
         cocFormat = CommonSet.SelectFormat(RenderTextureFormat.R8, RenderTextureFormat.RHalf);
@@ -1687,7 +1691,6 @@ public class DragonPostProcessBase : MonoBehaviour {
         }
         CommonSet.SetMaterialKeyword(ref uberMaterial, "DEPTHOFFIELD", mProperty.dofFast); 
     }
-
     public void InitColorGrading()
     { 
         bool sceneLutEnable = SceneColorLookupEnable() && sceneColorGradingParam.internalLutTex;
@@ -1730,7 +1733,6 @@ public class DragonPostProcessBase : MonoBehaviour {
             mMaterialPlayerBloom.SetFloat(CommonSet.ShaderProperties.playerAdaptedLum, adaptLumID);
         }
     }
-
     void InitToneMapLum(int adaptLumID,Property.ToneMapProperty toneMapProperty)
     {
         uberMaterial.SetFloat(adaptLumID, 1);
@@ -1747,7 +1749,6 @@ public class DragonPostProcessBase : MonoBehaviour {
             }
         }
     }
-
     void InitAntiAliasing()
     {
         if (mProperty.fxaaQuality == Property.FXAAQuality.LOW)
@@ -1761,7 +1762,6 @@ public class DragonPostProcessBase : MonoBehaviour {
             mMaterialFXAA.EnableKeyword("FXAA_NORMAL");
         }
     }
-
     void InitMask()
     {
         bool enable = MaskEnable();
@@ -1772,7 +1772,6 @@ public class DragonPostProcessBase : MonoBehaviour {
         }
         CommonSet.SetMaterialKeyword(ref uberMaterial, "OVERLAY", enable);
     }
-
     void InitVignette()
     {
         bool enable = VignetteEnable();
@@ -1800,7 +1799,6 @@ public class DragonPostProcessBase : MonoBehaviour {
             CommonSet.SetMaterialKeyword(ref uberMaterial, "VIGNETTEALL", false);
         }       
     }
-
     public void InitBorder()
     {
         bool enable = BorderEnable();
@@ -1815,7 +1813,6 @@ public class DragonPostProcessBase : MonoBehaviour {
 
         CommonSet.SetMaterialKeyword(ref uberMaterial, "BORDER", enable);
     }
-
     public void InitRadialBlur()
     {
         bool enable = RadialBlurEnable();
@@ -1825,12 +1822,10 @@ public class DragonPostProcessBase : MonoBehaviour {
             mMaterialRadialBlur.SetFloat(CommonSet.ShaderProperties.radialStrength, mProperty.radialStrength);
         }
     }
-
     public void InitDistortion()
     {
         CommonSet.SetMaterialKeyword(ref uberMaterial, "DISTORTION", AlphaBufferEnable());  
     }
-
     void InitLumaOcclusion()
     {
         if (LumaOcclusionEnable())
@@ -1897,8 +1892,6 @@ public class DragonPostProcessBase : MonoBehaviour {
 
         return false;
     }
-
-
     public bool AntialiasingEnable()
     {
         if (graphicsSetting && graphicsSetting.dynamicQuality)
@@ -2001,7 +1994,7 @@ public class DragonPostProcessBase : MonoBehaviour {
     }
     public bool CloudShadowEnable()
     {
-        bool cloudShadow = mMaterialCloudShadow && mProperty.cloudShadow;
+        bool cloudShadow = mMaterialCloudShadow && mProperty.cloudShadow && EnvironmentManager.Instance.isSupportDepthTex;
 
         if (graphicsSetting)
         {
@@ -2012,7 +2005,7 @@ public class DragonPostProcessBase : MonoBehaviour {
     }
     public bool AmbientOcclusionEnable()
     {
-        bool ambientOcclusion = mMaterialAmbientOcclusion && mProperty.ambientOcclusion && EnvironmentManager.Instance.isSupportMRT;
+        bool ambientOcclusion = mMaterialAmbientOcclusion && mProperty.ambientOcclusion && EnvironmentManager.Instance.isSupportMRT && EnvironmentManager.Instance.isSupportDepthTex;
 
         if (graphicsSetting)
         {
@@ -2021,10 +2014,20 @@ public class DragonPostProcessBase : MonoBehaviour {
 
         return ambientOcclusion;
     }
+    public bool StochasticSSREnable()
+    {
+        bool stochasticSSR = mMaterialStochasticSSR && mProperty.stochasticScreenSpaceReflection && SystemInfo.supportsMotionVectors && EnvironmentManager.Instance.isSupportMRT && EnvironmentManager.Instance.isSupportDepthTex;
 
+        if (graphicsSetting)
+        {
+            stochasticSSR = stochasticSSR && graphicsSetting.stochasticSSR;
+        }
+
+        return stochasticSSR;
+    }
     public bool NormalBufferEnable()
     {
-        return AmbientOcclusionEnable();
+        return AmbientOcclusionEnable() || StochasticSSREnable();
     }
     public bool LumaOcclusionEnable()
     {
@@ -2103,10 +2106,9 @@ public class DragonPostProcessBase : MonoBehaviour {
 
         return dofFast;
     }
-
     public bool HeightFogEnable()
     {
-        bool heightFog = mProperty.heightFog && mMaterialHeightFog;
+        bool heightFog = mProperty.heightFog && mMaterialHeightFog && EnvironmentManager.Instance.isSupportDepthTex;
 
         if (graphicsSetting)
         {
@@ -2126,7 +2128,6 @@ public class DragonPostProcessBase : MonoBehaviour {
 
         return chromaticAberration;
     }
-
     public bool GetDirty()
     {
         if (oldProperty.Diff(mProperty))

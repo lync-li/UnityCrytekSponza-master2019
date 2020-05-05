@@ -149,7 +149,9 @@ public class DragonPostProcess : DragonPostProcessBase {
             {
                 RenderTextureFormat depthRawFormat = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.RFloat) ? RenderTextureFormat.RFloat : RenderTextureFormat.RHalf;
                 depthCopy = new RenderTexture(width, height, 0, depthRawFormat, RenderTextureReadWrite.Linear);
-                depthCopy.autoGenerateMips = false;
+                depthCopy.filterMode = FilterMode.Point;
+                depthRT.useMipMap = true;
+                depthRT.autoGenerateMips = true;
                 forceUpdate = true;
             }
         }
@@ -169,6 +171,11 @@ public class DragonPostProcess : DragonPostProcessBase {
                 Shader.EnableKeyword("_MRT");
             else
                 Shader.DisableKeyword("_MRT");
+
+            if (StochasticSSREnable())
+                cam.depthTextureMode |= DepthTextureMode.MotionVectors;
+            else
+                cam.depthTextureMode = DepthTextureMode.None;
 
             int effectLayer = LayerMask.NameToLayer("EffectLayer");
             int distortionLayer = LayerMask.NameToLayer("AirDistortion");
@@ -432,7 +439,6 @@ public class DragonPostProcess : DragonPostProcessBase {
         // else
         //     sceneCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, BuiltinRenderTextureType.CameraTarget, mMaterialVolumetricFog, (int)VolumetricFogPass.All);
     }
-
     void FinishVolumetricFog(CommandBuffer cb)
     {
         if (mProperty.fogDownSampling > 1 && SystemInfo.supportedRenderTargetCount > 2 && SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.Depth))
@@ -442,18 +448,15 @@ public class DragonPostProcess : DragonPostProcessBase {
             cb.ReleaseTemporaryRT(CommonSet.ShaderProperties.downSampleDepth);
         }
     }
-
     void PrepareHeightFog(CommandBuffer cb, RenderTargetIdentifier colorTexID)
     {
         cb.SetRenderTarget(colorTexID);
         cb.DrawMesh(CommonSet.fullscreenTriangle, Matrix4x4.identity, mMaterialHeightFog, 0, 0);
     }
-
     void FinishHeightFog(CommandBuffer cb)
     {
 
     }
-
     void PrepareCloudShadow(CommandBuffer cb)
     {
         float tanHalfFovY = Mathf.Tan(0.5f * cam.fieldOfView * Mathf.Deg2Rad);
@@ -462,12 +465,10 @@ public class DragonPostProcess : DragonPostProcessBase {
         mMaterialOpaque.SetVector(CommonSet.ShaderProperties.uvToView, new Vector4(2.0f * invFocalLenX, -2.0f * invFocalLenY, -1.0f * invFocalLenX, 1.0f * invFocalLenY));
         //sceneCommandBuffer.Blit(BuiltinRenderTextureType.CameraTarget, BuiltinRenderTextureType.CameraTarget, mMaterialCloudShadow, 0);
     }
-
     void FinishCloudShadow(CommandBuffer cb)
     {
 
     }
-
     public void PrepareBloom(CommandBuffer cb, RenderTexture source, Material bloomMaterial, float maxRadius, int bloomTexID, bool colorGrading, float ratio)
     {
         int dw = source.width / 2;
@@ -566,12 +567,10 @@ public class DragonPostProcess : DragonPostProcessBase {
 
         cb.SetGlobalTexture(bloomTexID, _BloomTexId);
     }
-
     public void FinishBloom(CommandBuffer cb, int bloomTexID)
     {
         cb.ReleaseTemporaryRT(bloomTexID);
     }
-
     void PrepareLumaOcclusion(CommandBuffer cb, RenderTexture colorRT)
     {
         int dw = cam.pixelWidth / 2;
@@ -602,12 +601,10 @@ public class DragonPostProcess : DragonPostProcessBase {
             lumaTexNameId = CommonSet.ShaderProperties.lumaTex;
         }
     }
-
     void FinishLumaOcclusion(CommandBuffer cb)
     {
         cb.ReleaseTemporaryRT(lumaTexNameId);
     }
-
     void UpdateRadialBlur()
     {
         if (mProperty.radialAmount != radialAmount || mProperty.radialStrength != radialStrength)
@@ -621,7 +618,6 @@ public class DragonPostProcess : DragonPostProcessBase {
             InitRadialBlur();
         }
     }
-
     void UpdateChromaticAberration()
     {
         if (mProperty.chromaAmount != chromaAmount || colorOffset !=  oldColorOffset)
@@ -649,7 +645,6 @@ public class DragonPostProcess : DragonPostProcessBase {
 
         }
     }
-
     void UpdateBorder()
     {
         if (mProperty.borderColor.a != borderFactor)

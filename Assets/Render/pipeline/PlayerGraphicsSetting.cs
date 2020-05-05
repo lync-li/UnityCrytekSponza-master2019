@@ -69,6 +69,8 @@ public class PlayerGraphicsSetting: MonoBehaviour
     public bool heightFog = true;
     //chromaticAberration
     public bool chromaticAberration = true;
+    //SSSR
+    public bool stochasticSSR = true;
 
     private void Awake()
     {
@@ -118,6 +120,7 @@ public class PlayerGraphicsSetting: MonoBehaviour
         cloudShadow = true;
         heightFog = true;
         chromaticAberration = true;
+        stochasticSSR = true;
     }
 
     public void Save()
@@ -153,6 +156,7 @@ public class PlayerGraphicsSetting: MonoBehaviour
         PlayerPrefs.SetInt("cloudShadow", cloudShadow ? 1 : 0);
         PlayerPrefs.SetInt("heightFog", heightFog ? 1 : 0);
         PlayerPrefs.SetInt("chromaticAberration", chromaticAberration ? 1 : 0);
+        PlayerPrefs.SetInt("stochasticSSR", stochasticSSR ? 1 : 0);
     }
 
     public void CheckKeyExist()
@@ -269,6 +273,10 @@ public class PlayerGraphicsSetting: MonoBehaviour
         {
             chromaticAberration = true;
         }
+        if (!PlayerPrefs.HasKey("stochasticSSR"))
+        {
+            stochasticSSR = true;
+        }
 
     }
 
@@ -302,5 +310,6 @@ public class PlayerGraphicsSetting: MonoBehaviour
         cloudShadow = PlayerPrefs.GetInt("cloudShadow") > 0 ? true : false;
         heightFog = PlayerPrefs.GetInt("heightFog") > 0 ? true : false;
         chromaticAberration = PlayerPrefs.GetInt("chromaticAberration") > 0 ? true : false;
+        stochasticSSR = PlayerPrefs.GetInt("stochasticSSR") > 0 ? true : false;
     }
 }

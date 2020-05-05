@@ -258,7 +258,7 @@ public class StochasticScreenSpaceReflection : MonoBehaviour
     void Awake()
     {
         RenderCamera = gameObject.GetComponent<Camera>();
-
+        RenderCamera.depthTextureMode |= DepthTextureMode.MotionVectors;
         //////Update don't need Tick Refresh Variable//////
         SSR_UpdateVariable();
     }
@@ -451,8 +451,6 @@ public class StochasticScreenSpaceReflection : MonoBehaviour
                 new Vector3(RenderCamera.nearClipPlane * RenderCamera.farClipPlane, RenderCamera.nearClipPlane - RenderCamera.farClipPlane, RenderCamera.farClipPlane);
         StochasticScreenSpaceReflectionMaterial.SetVector(SSR_CameraClipInfo_ID, SSR_ClipInfo);
     }
-
-
 
     private void RenderScreenSpaceReflection() {
         ScreenSpaceReflectionBuffer.Clear();

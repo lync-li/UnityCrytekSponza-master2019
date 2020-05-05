@@ -27,6 +27,7 @@ public class EnvironmentObjectInspector : Editor
     static bool showSceneHBAO;
     static bool showSceneLBAO;
     static bool showSceneCloudShadow;
+    static bool showSceneSSR;
 
     static bool showEffectBloom;
     static bool showEffectTonemapping;
@@ -695,6 +696,26 @@ public class EnvironmentObjectInspector : Editor
 
                 field = serializedObject.FindProperty("data.property.cloudDirection");
                 EditorGUILayout.PropertyField(field, new GUIContent("方向           Direction"));
+            }
+            #endregion
+
+            #region sceneSSSR
+            EditorGUILayout.Space();
+            EditorGUILayout.Space();
+
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField(" ", new GUILayoutOption[] { GUILayout.Width(foldSpace) });
+            showSceneSSR = EditorGUILayout.Foldout(showSceneSSR, "屏幕空间反射   SSR", foldStyle);
+            EditorGUILayout.LabelField(" ", new GUILayoutOption[] { GUILayout.Width(space) });
+            env.data.property.stochasticScreenSpaceReflection = EditorGUILayout.Toggle(env.data.property.stochasticScreenSpaceReflection, new GUILayoutOption[] { });
+
+            EditorGUILayout.EndHorizontal();
+            if (showSceneSSR)
+            {
+                EditorGUILayout.Space();
+
+                field = serializedObject.FindProperty("data.property.stochasticScreenSpaceReflection");
+                EditorGUILayout.PropertyField(field, new GUIContent("贴图           Texture"));
             }
             #endregion
 
