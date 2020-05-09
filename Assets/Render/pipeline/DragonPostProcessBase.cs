@@ -86,6 +86,17 @@ public class DragonPostProcessBase : MonoBehaviour {
     public enum StochasticSSRPass
     {
         HiZBuffer = 0,
+        HierarchicalZTraceSingleSampler,
+        HierarchicalZTraceMultiSampler,
+        Spatiofilter,
+        Temporalfilter,
+        Combine
+    }
+
+    public enum RenderResolution
+    {
+        Full = 1,
+        Half = 2
     }
     #endregion
 
@@ -640,6 +651,10 @@ public class DragonPostProcessBase : MonoBehaviour {
         public bool stochasticScreenSpaceReflection = false;
         [Range(4, 10)]
         public int hierarchicalZLevel = 10;
+        public RenderResolution rayCastingResolution = RenderResolution.Full;
+        //public RenderResolution rayCastingResolution = RenderResolution.Full;
+        [Range(1, 4)]
+        public int rayNum = 1;
 
 
         public bool Diff(Property other)
@@ -983,6 +998,9 @@ public class DragonPostProcessBase : MonoBehaviour {
     protected Color[] noiseColors;
     protected Color[] adjustedColors;
     protected Texture2D oldFogTex;
+
+    //SSSR
+    protected RenderTargetIdentifier[] sssrMrt;
 
     //luma
     private Vector4 lumaFarams = new Vector4();
@@ -1641,6 +1659,15 @@ public class DragonPostProcessBase : MonoBehaviour {
 
        // CommonSet.SetMaterialKeyword(ref mMaterialOpaque, "VFOG", enable);
     }
+    void InitStochasticSSR()
+    {
+        bool enable = StochasticSSREnable();
+        if (enable)
+        {
+            mMaterialStochasticSSR.SetInt(CommonSet.ShaderProperties.rayNum, mProperty.rayNum);     
+            
+        }
+    }
     void InitHeightFog()
     {
         bool enable = HeightFogEnable();
@@ -1983,7 +2010,7 @@ public class DragonPostProcessBase : MonoBehaviour {
     }
     public bool VolumetricFogEnable()
     {
-        bool volumetricFog = mMaterialVolumetricFog && mProperty.volumetricFog && mProperty.fogTex;
+        bool volumetricFog = mMaterialVolumetricFog && mProperty.volumetricFog && mProperty.fogTex && EnvironmentManager.Instance.isSupportMRT;
 
         if (graphicsSetting)
         {

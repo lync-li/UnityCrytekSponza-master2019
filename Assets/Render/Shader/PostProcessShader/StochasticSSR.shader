@@ -1,9 +1,4 @@
 ﻿Shader "Hidden/DragonStochasticSSR" {
-
-	CGINCLUDE
-		#include "StochasticSSR.cginc"
-	ENDCG
-
 	SubShader {
 		ZTest Always 
 		ZWrite Off
@@ -14,67 +9,57 @@
 			Name"HierarchicalZBuffer"
 			CGPROGRAM
 				#pragma vertex VertDefault
-				#pragma fragment Hierarchical_ZBuffer
+				#pragma fragment HierarchicalZBuffer
+				#include "StochasticSSR.cginc"
 			ENDCG
 		}	
 
-
-/*
 		Pass 
 		{
-			Name"Pass_Hierarchical_ZTrace_SingleSampler"
+			Name"HierarchicalZTraceSingleSampler"
 			CGPROGRAM
-				#pragma vertex vert
-				#pragma fragment Hierarchical_ZTrace_SingleSPP
+				#pragma vertex VertDefault
+				#pragma fragment HierarchicalZTrace	
+				#define WORLDPOS 1
+				#include "StochasticSSR.cginc"				
 			ENDCG
 		} 	
 
 		Pass 
 		{
-			Name"Pass_Hierarchical_ZTrace_MultiSampler"
+			Name"HierarchicalZTraceMultiSampler"
 			CGPROGRAM
-				#pragma vertex vert
-				#pragma fragment Hierarchical_ZTrace_MultiSPP
+				#pragma vertex VertDefault
+				#pragma fragment HierarchicalZTrace
+				#define MULTI 1
+				#define WORLDPOS 1
+				#include "StochasticSSR.cginc"			
 			ENDCG
 		} 
 
 		Pass 
 		{
-			Name"Pass_Spatiofilter_SingleSampler"
+			Name"Spatiofilter"
 			CGPROGRAM
-				#pragma vertex vert
-				#pragma fragment Spatiofilter_SingleSPP
+				#pragma vertex VertDefault
+				#pragma fragment Spatiofilter
+				#define WORLDPOS 1
+				#include "StochasticSSR.cginc"			
 			ENDCG
-		} 
-
+		} 		
+		
 		Pass 
 		{
-			Name"Pass_Spatiofilter_MultiSampler"
+			Name"Temporalfilter"
 			CGPROGRAM
-				#pragma vertex vert
-				#pragma fragment Spatiofilter_MultiSPP
+				#pragma vertex VertDefault
+				#pragma fragment Temporalfilter
+				#define WORLDPOS 1
+				#include "StochasticSSR.cginc"			
 			ENDCG
 		} 
-
-
-		Pass 
-		{
-			Name"Pass_Temporalfilter_SingleSampler"
-			CGPROGRAM
-				#pragma vertex vert
-				#pragma fragment Temporalfilter_SingleSPP
-			ENDCG
-		} 
-
-		Pass 
-		{
-			Name"Pass_Temporalfilter_MultiSampler"
-			CGPROGRAM
-				#pragma vertex vert
-				#pragma fragment Temporalfilter_MultiSPP
-			ENDCG
-		} 
-
+		
+/*
 		Pass 
 		{
 			Name"Pass_CombineReflection"

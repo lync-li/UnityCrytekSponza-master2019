@@ -144,7 +144,8 @@ public class CommonSet : MonoBehaviour{
         public static int overlayTex = Shader.PropertyToID("_OverlayTex");
         public static int overlayColor = Shader.PropertyToID("_OverlayColor");
 
-        public static int fogClipToWorld = Shader.PropertyToID("_FogClipToWorld");
+        public static int clipToWorld = Shader.PropertyToID("_ClipToWorld");
+
         public static int fogClipDir = Shader.PropertyToID("_FogClipDir");
         public static int volumetricFogColor = Shader.PropertyToID("_FogColor");
         public static int fogStep = Shader.PropertyToID("_FogStep");
@@ -194,6 +195,21 @@ public class CommonSet : MonoBehaviour{
 
         public static int hiZbufferTex = Shader.PropertyToID("_HiZbufferTex");
         public static int hiZbufferLevel = Shader.PropertyToID("_HiZbufferLevel");
+
+        public static int rayCastTex0 = Shader.PropertyToID("_RayCastTex0");
+        public static int rayCastTex1 = Shader.PropertyToID("_RayCastTex1");
+        public static int rayCastTexDepth = Shader.PropertyToID("_RayCastDepth");
+        public static int spatialTex = Shader.PropertyToID("_SpatialTex");
+        public static int prevTemporalTex = Shader.PropertyToID("_PrevTemporalTex");
+        public static int CurrTemporalTex = Shader.PropertyToID("_CurrTemporalTex");
+        public static int temporalTex = Shader.PropertyToID("_temporalTex");
+        public static int rayNum = Shader.PropertyToID("_RayNum");
+        public static int jitter = Shader.PropertyToID("_Jitter");
+        public static int ssrNoiseTex = Shader.PropertyToID("_SSRNoiseTex");
+        public static int brdfBias = Shader.PropertyToID("_BRDFBias");
+        public static int rayCastStepNum = Shader.PropertyToID("_RayCastStepNum");
+        public static int rayCastThickness = Shader.PropertyToID("_RayCastThickness");
+
     }
     #endregion 
    
@@ -291,5 +307,25 @@ public class CommonSet : MonoBehaviour{
         {
             material.DisableKeyword(keyword);
         }
-    } 
+    }
+
+    public static void RefreshRT(ref RenderTexture rt, int width,int height,int depth, RenderTextureFormat format,bool useMipMap,bool autoGenerateMips, FilterMode filterMode,ref bool forceUpdate,ref Camera cam)
+    {
+        if (rt)
+        {
+            if (width != rt.width || height != rt.height || rt.format != format || rt.depth != depth)
+            {
+                cam.targetTexture = null;
+                CommonSet.DeleteRenderTexture(ref rt);
+            }
+        }
+        if (!rt)
+        {
+            rt = new RenderTexture(width, height, depth, format, RenderTextureReadWrite.Linear);
+            rt.autoGenerateMips = autoGenerateMips;
+            rt.useMipMap = useMipMap;
+            rt.filterMode = filterMode;
+            forceUpdate = true;
+        }
+    }
 }

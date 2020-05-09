@@ -113,6 +113,7 @@ public class AlphaPass: MonoBehaviour {
     {
         int width = EnvironmentManager.Instance.GetCurrentRTWidth();
         int height = EnvironmentManager.Instance.GetCurrentRTHeight();
+                
         if (alphaRT)
         {
             if (width != alphaRT.width || height != alphaRT.height || alphaRT.format != EnvironmentManager.Instance.halfFormat)

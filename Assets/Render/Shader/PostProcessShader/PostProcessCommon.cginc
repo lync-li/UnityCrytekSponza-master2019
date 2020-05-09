@@ -18,6 +18,8 @@ sampler2D 	_CameraDepthNormalsTexture;
 sampler2D_float _CameraDepthTexture;
 float4 		_CameraDepthTexture_TexelSize;
 
+sampler2D 	_NormalBufferTex; 
+
 half4 		_BloomCurve;
 half 		_BloomIntensity;
 half 		_AlphaBloomIntensity;
@@ -72,7 +74,7 @@ half 		_AdaptedLum;
 half 		_AlphaAdaptedLum;
 half 		_PlayerAdaptedLum;
 
-float4x4 _FogClipToWorld;
+float4x4 _ClipToWorld;
 
 struct appdata_t
 {
@@ -82,7 +84,7 @@ struct appdata_t
 
 struct v2f
 {
-	float4 pos : POSITION;		
+	float4 pos : SV_POSITION;		
 	half2 texcoord0 : TEXCOORD0;	
 	half2 texcoord1	: TEXCOORD1;		
 };
@@ -142,7 +144,7 @@ VaryingsDefault VertDefault(AttributesDefault v)
     // Homogeneous world position on the far plane
     farPlaneClip.y *= _ProjectionParams.x;	
 
-    float4 farPlaneWorld4 = mul(_FogClipToWorld, farPlaneClip);
+    float4 farPlaneWorld4 = mul(_ClipToWorld, farPlaneClip);
                
     // World position on the far plane
     float3 farPlaneWorld = farPlaneWorld4.xyz / farPlaneWorld4.w;
