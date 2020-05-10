@@ -452,7 +452,7 @@ public class DragonPostProcess : DragonPostProcessBase {
     }
     void PrepareStochasticSSR(CommandBuffer cb)
     {
-        for (int i = 1; i < mProperty.hierarchicalZLevel; ++i)
+        for (int i = 1; i < mProperty.hiZMaxLevel; ++i)
         {
             cb.SetGlobalTexture(CommonSet.ShaderProperties.hiZbufferTex, depthCopy);
             cb.SetGlobalInt(CommonSet.ShaderProperties.hiZbufferLevel, i - 1);

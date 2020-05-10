@@ -196,21 +196,25 @@ public class CommonSet : MonoBehaviour{
 
         public static int hiZbufferTex = Shader.PropertyToID("_HiZbufferTex");
         public static int hiZbufferLevel = Shader.PropertyToID("_HiZbufferLevel");
-
         public static int rayCastTex0 = Shader.PropertyToID("_RayCastTex0");
         public static int rayCastTex1 = Shader.PropertyToID("_RayCastTex1");
         public static int rayCastTexDepth = Shader.PropertyToID("_RayCastDepth");
         public static int spatialTex = Shader.PropertyToID("_SpatialTex");
         public static int prevTemporalTex = Shader.PropertyToID("_PrevTemporalTex");
-        public static int CurrTemporalTex = Shader.PropertyToID("_CurrTemporalTex");
-        public static int temporalTex = Shader.PropertyToID("_temporalTex");
+        public static int temporalTex = Shader.PropertyToID("_TemporalTex");
         public static int rayNum = Shader.PropertyToID("_RayNum");
-        public static int jitter = Shader.PropertyToID("_Jitter");
-        public static int ssrNoiseTex = Shader.PropertyToID("_SSRNoiseTex");
-        public static int brdfBias = Shader.PropertyToID("_BRDFBias");
         public static int rayCastStepNum = Shader.PropertyToID("_RayCastStepNum");
+        public static int hiZMaxLevel = Shader.PropertyToID("_HiZMaxLevel");
+        public static int resolverNum = Shader.PropertyToID("_ResolverNum");
+        public static int jitter = Shader.PropertyToID("_Jitter");
+        public static int brdfBias = Shader.PropertyToID("_BRDFBias");
         public static int rayCastThickness = Shader.PropertyToID("_RayCastThickness");
-
+        public static int screenFade = Shader.PropertyToID("_ScreenFade");
+        public static int temporalScale = Shader.PropertyToID("_TemporalScale");
+        public static int temporalWeight = Shader.PropertyToID("_TemporalWeight");
+        public static int ssrNoiseTex = Shader.PropertyToID("_SSRNoiseTex");
+        public static int ssrNoiseTexSize = Shader.PropertyToID("_SSRNoiseTexSize");
+        public static int prevViewProjectionMatrix = Shader.PropertyToID("_PrevViewProjectionMatrix");
     }
     #endregion 
    

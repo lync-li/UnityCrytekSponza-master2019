@@ -714,8 +714,42 @@ public class EnvironmentObjectInspector : Editor
             {
                 EditorGUILayout.Space();
 
-                field = serializedObject.FindProperty("data.property.stochasticScreenSpaceReflection");
-                EditorGUILayout.PropertyField(field, new GUIContent("贴图           Texture"));
+                field = serializedObject.FindProperty("data.property.rayCastingResolution");
+                EditorGUILayout.PropertyField(field, new GUIContent("分辨率        Resolution"));
+
+                field = serializedObject.FindProperty("data.property.brdfBias");
+                EditorGUILayout.PropertyField(field, new GUIContent("BRDFBias           "));
+
+                field = serializedObject.FindProperty("data.property.rayCastThickness");
+                EditorGUILayout.PropertyField(field, new GUIContent("厚度           Thickness"));
+
+                field = serializedObject.FindProperty("data.property.screenFade");
+                EditorGUILayout.PropertyField(field, new GUIContent("过渡           ScreenFade"));
+
+                field = serializedObject.FindProperty("data.property.rayNum");
+                EditorGUILayout.PropertyField(field, new GUIContent("射线数量       RayNum"));
+
+                field = serializedObject.FindProperty("data.property.rayCastStepNum");
+                EditorGUILayout.PropertyField(field, new GUIContent("射线步数       RayCastStep"));
+
+                field = serializedObject.FindProperty("data.property.hiZMaxLevel");
+                EditorGUILayout.PropertyField(field, new GUIContent("Minmap级别     HiZMaxLevel"));
+
+                field = serializedObject.FindProperty("data.property.ssrNoiseTex");
+                EditorGUILayout.PropertyField(field, new GUIContent("噪声图     NoiseTex"));
+
+                field = serializedObject.FindProperty("data.property.resolverNum");
+                EditorGUILayout.PropertyField(field, new GUIContent("ResolverNum"));
+
+                field = serializedObject.FindProperty("data.property.temporalScale");
+                EditorGUILayout.PropertyField(field, new GUIContent("TemporalScale"));
+
+                field = serializedObject.FindProperty("data.property.temporalWeight");
+                EditorGUILayout.PropertyField(field, new GUIContent("TemporalWeight"));
+
+                field = serializedObject.FindProperty("data.property.ssrDebug");
+                EditorGUILayout.PropertyField(field, new GUIContent("Debug"));
+
             }
             #endregion
 

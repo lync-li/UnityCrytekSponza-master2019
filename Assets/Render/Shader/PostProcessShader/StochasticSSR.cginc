@@ -6,10 +6,10 @@
 #define HiZ_Stop_Level  0
 
 int _HiZbufferLevel;
-int _NumRay;
+int _RayNum;
 int _RayCastStepNum;
 int _HiZMaxLevel;
-int _NumResolver;
+int _ResolverNum;
 
 half4 _Jitter;
 half _BRDFBias;
@@ -78,7 +78,7 @@ void HierarchicalZTrace(VaryingsDefault i, out half4 output0 : SV_Target0, out h
 	half  outMask = 0;
 	half  outPDF = 0;
 #if MULTI	
-	for (int i = 0; i < _NumRay; i++)
+	for (int i = 0; i < _RayNum; i++)
 	{
 		_Jitter.zw = sin( i + _Jitter.zw );
 #endif
@@ -140,11 +140,11 @@ void HierarchicalZTrace(VaryingsDefault i, out half4 output0 : SV_Target0, out h
 	}
 
 	//-----Output-----------------------------------------------------------------------------
-	outColor /= _NumRay;
+	outColor /= _RayNum;
 	outColor.rgb /= 1 - Luminance(outColor.rgb);
-	outMask /= _NumRay;
-	outHitViewPos /= _NumRay;
-	outPDF /= _NumRay;
+	outMask /= _RayNum;
+	outHitViewPos /= _RayNum;
+	outPDF /= _RayNum;
 #else	
 	outColor = sampleColor;
 	outColor.rgb /= 1 - Luminance(outColor.rgb);
@@ -191,7 +191,7 @@ float4 Spatiofilter(VaryingsDefault i) : SV_Target
 	half4 sampleColor;
 	half4 reflecttionColor;
 	
-	for (int i = 0; i < _NumResolver; i++) {
+	for (int i = 0; i < _ResolverNum; i++) {
 		offsetUV = mul(offsetRotationMatrix, offset[i] * (1 / _ScreenSize));
 		neighborUV = uv + offsetUV;
 		
