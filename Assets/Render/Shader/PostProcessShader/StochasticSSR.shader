@@ -1,4 +1,9 @@
 ﻿Shader "Hidden/DragonStochasticSSR" {
+
+	CGINCLUDE
+		#define WORLDPOS 1
+	ENDCG
+	
 	SubShader {
 		ZTest Always 
 		ZWrite Off
@@ -19,8 +24,7 @@
 			Name"HierarchicalZTraceSingleSampler"
 			CGPROGRAM
 				#pragma vertex VertDefault
-				#pragma fragment HierarchicalZTrace	
-				#define WORLDPOS 1
+				#pragma fragment HierarchicalZTrace					
 				#include "StochasticSSR.cginc"				
 			ENDCG
 		} 	
@@ -32,7 +36,6 @@
 				#pragma vertex VertDefault
 				#pragma fragment HierarchicalZTrace
 				#define MULTI 1
-				#define WORLDPOS 1
 				#include "StochasticSSR.cginc"			
 			ENDCG
 		} 
@@ -43,23 +46,20 @@
 			CGPROGRAM
 				#pragma vertex VertDefault
 				#pragma fragment Spatiofilter
-				#define WORLDPOS 1
 				#include "StochasticSSR.cginc"			
 			ENDCG
 		} 		
-		
+	
 		Pass 
 		{
 			Name"Temporalfilter"
 			CGPROGRAM
 				#pragma vertex VertDefault
 				#pragma fragment Temporalfilter
-				#define WORLDPOS 1
 				#include "StochasticSSR.cginc"			
 			ENDCG
 		} 
-		
-/*
+/*	
 		Pass 
 		{
 			Name"Pass_CombineReflection"

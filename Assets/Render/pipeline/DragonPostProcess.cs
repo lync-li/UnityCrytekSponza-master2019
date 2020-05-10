@@ -475,17 +475,18 @@ public class DragonPostProcess : DragonPostProcessBase {
         sssrMrt[0] = rayCast0;
         sssrMrt[1] = rayCast1;
         cb.SetRenderTarget(sssrMrt, depth);
-        cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, mProperty.rayNum > 1 ? (int)StochasticSSRPass.HierarchicalZTraceMultiSampler : (int)StochasticSSRPass.HierarchicalZTraceSingleSampler);
+        cb.SetGlobalTexture(CommonSet.ShaderProperties.sceneTex, colorRT);
+        cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0, mProperty.rayNum > 1 ? (int)StochasticSSRPass.HierarchicalZTraceMultiSampler : (int)StochasticSSRPass.HierarchicalZTraceSingleSampler);
 
         var spatial = new RenderTargetIdentifier(CommonSet.ShaderProperties.spatialTex);
         cb.GetTemporaryRT(CommonSet.ShaderProperties.spatialTex, colorRT.width, colorRT.height, 0, FilterMode.Bilinear, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
         cb.SetRenderTarget(spatial);
-        cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, (int)StochasticSSRPass.Spatiofilter);
+        cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR,0, (int)StochasticSSRPass.Spatiofilter);
 
         cb.SetGlobalTexture(CommonSet.ShaderProperties.spatialTex, spatial);
         cb.SetGlobalTexture(CommonSet.ShaderProperties.prevTemporalTex, prevTemporal);      
         cb.SetRenderTarget(currTemporal);
-        cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, (int)StochasticSSRPass.Temporalfilter);
+        cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0,(int)StochasticSSRPass.Temporalfilter);
 
         RenderTargetIdentifier temp = prevTemporal;
         prevTemporal = currTemporal;

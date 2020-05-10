@@ -167,7 +167,7 @@ inline half Luma4(half3 Color)
     return (Color.g * 2) + (Color.r + Color.b);
 }
 
-inline float3 getWorldPos(VaryingsDefault i, float depth01) {	
+inline float3 GetWorldPos(VaryingsDefault i, float depth01) {	
     float3 worldPos = (i.cameraToFarPlane * depth01) + _WorldSpaceCameraPos.xyz; 
     return worldPos;
 }

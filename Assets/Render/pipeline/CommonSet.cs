@@ -63,6 +63,7 @@ public class CommonSet : MonoBehaviour{
     #region shaderProperties
     public static class ShaderProperties
     {
+        public static int sceneTex = Shader.PropertyToID("_SceneTex");
         public static int alphaTex = Shader.PropertyToID("_AlphaTex");
         public static int distortionTex = Shader.PropertyToID("_DistortionTex");
 
