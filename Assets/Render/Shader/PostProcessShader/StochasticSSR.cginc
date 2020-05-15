@@ -292,6 +292,19 @@ half4 Temporalfilter(VaryingsDefault i) : SV_Target
 }
 
 
+half3 decode (half2 enc)
+{
+    half2 fenc = enc*4-2;
+    half f = dot(fenc,fenc);
+    half g = sqrt(1-f/4);
+    half3 n;
+    n.xy = fenc*g;
+    n.z = 1-f/2;
+    return n;
+}
+
+
+
 ////////////////////////////////-----CombinePass-----------------------------------------------------------------------------
 half4 CombineReflectionColor(VaryingsDefault i) : SV_Target {
 	half2 uv = i.texcoord.xy;
@@ -302,6 +315,10 @@ half4 CombineReflectionColor(VaryingsDefault i) : SV_Target {
 	half  roughness = clamp(1 - normalSmoothness.a, 0.02, 1);
 	float3 worldNormal = normalSmoothness.xyz * 2 - 1;
 	float3 worldPos = GetWorldPos(i, Linear01Depth(depth));	
+	
+	//float3 viewNormal = decode(normalSmoothness.xy);
+	//float3 viewNormal = DecodeViewNormalStereo(half4(normalSmoothness.xy,0,0));
+	//float3 worldNormal = mul((float3x3)(UNITY_MATRIX_I_V),viewNormal);
 	
 	half3 viewDir = normalize(worldPos - _WorldSpaceCameraPos);
 	float3 reflUVW   = reflect(viewDir, worldNormal);
@@ -329,7 +346,7 @@ half4 CombineReflectionColor(VaryingsDefault i) : SV_Target {
 	half perceptualRoughness = roughness*(1.7 - 0.7*roughness);
 	//half4 rgbm = unity_SpecCube0.SampleLevel(samplerunity_SpecCube0, reflUVW, perceptualRoughness * 6);
 	
-	half4 rgbm = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, worldNormal, perceptualRoughness * 6);
+	half4 rgbm = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflUVW, perceptualRoughness * 6);
 	half3 cubemap = DecodeHDR(rgbm, d.probeHDR[0]) * specular.a;
     //Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(1- roughness, d.worldViewDir, worldNormal, specular.rgb);	
 

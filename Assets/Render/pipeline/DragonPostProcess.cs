@@ -94,7 +94,7 @@ public class DragonPostProcess : DragonPostProcessBase {
  
         if(NormalBufferEnable())
         {
-            CommonSet.RefreshRT(ref normalRT, width, height, 0 , RenderTextureFormat.ARGB32, false, false, FilterMode.Bilinear, ref update, ref cam);
+            CommonSet.RefreshRT(ref normalRT, width, height, 0 , RenderTextureFormat.ARGBHalf, false, false, FilterMode.Bilinear, ref update, ref cam);
             CommonSet.RefreshRT(ref specRT, width, height, 0, RenderTextureFormat.ARGB32, false, false, FilterMode.Bilinear, ref update, ref cam);
             bufs[0] = colorRT.colorBuffer;
             bufs[1] = normalRT.colorBuffer;

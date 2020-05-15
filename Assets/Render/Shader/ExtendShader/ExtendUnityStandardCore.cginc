@@ -605,6 +605,13 @@ VertexOutputForwardBase vertForwardBase(VertexInput v)
     return o;
 }
 
+half2 encode222 (half3 n)
+{
+    half p = sqrt(n.z*8+8);
+    return half2(n.xy/p + 0.5);
+}
+
+
 #if _MRT
 FragmentOutput fragForwardBaseInternal (VertexOutputForwardBase i)
 #else
@@ -694,7 +701,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
 	//Unity_GlossyEnvironment (UNITY_PASS_TEXCUBE(unity_SpecCube0), data.probeHDR[0], glossIn);
 	half roughness = 1 - s.smoothness;
 	half perceptualRoughness = roughness*(1.7 - 0.7*roughness);
-	half4 rgbm = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, s.normalWorld, perceptualRoughness * 6);
+	half4 rgbm = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflUVW, perceptualRoughness * 6);
 	half3 cubemap = DecodeHDR(rgbm, dd.probeHDR[0]) * occlusion;
 
 	return half4(cubemap,1 );
@@ -751,7 +758,11 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
 #if _MRT
 	FragmentOutput o;
 	o.dest0 = color;
-	o.dest1 = half4(s.normalWorld * 0.5 + 0.5,s.smoothness);
+	o.dest1 = half4(s.normalWorld * 0.5 + 0.5,s.smoothness); //精度不足
+	//float3 viewNormal = mul((float3x3)(UNITY_MATRIX_V),s.normalWorld);
+	//o.dest1 = half4(encode222(viewNormal),0,s.smoothness);
+	//o.dest1 = half4(EncodeViewNormalStereo(viewNormal),0,s.smoothness);
+
 	o.dest2 = half4(s.specColor,occlusion);
 	return o;
 #else
