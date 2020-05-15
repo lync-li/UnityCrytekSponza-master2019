@@ -131,7 +131,11 @@ public class PlayerGraphicsSettingInspector : Editor
 
         EditorGUILayout.Space();
         field = serializedObject.FindProperty("cloudShadow");
-        EditorGUILayout.PropertyField(field, new GUIContent("云投影"));    
+        EditorGUILayout.PropertyField(field, new GUIContent("云投影"));
+
+        EditorGUILayout.Space();
+        field = serializedObject.FindProperty("stochasticSSR");
+        EditorGUILayout.PropertyField(field, new GUIContent("屏幕空间反射"));
 
 
         EditorGUILayout.Space();
@@ -146,8 +150,7 @@ public class PlayerGraphicsSettingInspector : Editor
             {
                 envManager.EnvironmentObjectToUnity(envManager.curEnv);
             }
-        }
-       
+        }      
 
         serializedObject.ApplyModifiedProperties();
     }

@@ -90,7 +90,8 @@ public class DragonPostProcessBase : MonoBehaviour {
         HierarchicalZTraceMultiSampler,
         Spatiofilter,
         Temporalfilter,
-        Combine
+        Combine,
+        Debug
     }
 
     public enum RenderResolution
@@ -650,6 +651,9 @@ public class DragonPostProcessBase : MonoBehaviour {
         //SSRR
         public bool stochasticScreenSpaceReflection = false;
         public RenderResolution rayCastingResolution = RenderResolution.Full;
+        public RenderResolution reflectionResolution = RenderResolution.Full;
+        [Range(10, 500)]
+        public float ssrMaxDistance = 100f;
         [Range(0, 1)]
         public float brdfBias = 0.7f;
         [Range(0.1f, 5)]
@@ -660,7 +664,7 @@ public class DragonPostProcessBase : MonoBehaviour {
         public int rayNum = 1;
         [Range(32, 512)]
         public int rayCastStepNum = 70;
-        [Range(4, 10)]
+        [Range(0, 10)]
         public int hiZMaxLevel = 10;
         public Texture2D ssrNoiseTex;
         [Range(1, 9)]
@@ -769,7 +773,8 @@ public class DragonPostProcessBase : MonoBehaviour {
                 || this.redOffset != other.redOffset || this.blueOffset != other.blueOffset)
                 return true;
 
-            if (this.stochasticScreenSpaceReflection != other.stochasticScreenSpaceReflection || this.rayCastingResolution != other.rayCastingResolution
+            if (this.stochasticScreenSpaceReflection != other.stochasticScreenSpaceReflection || this.rayCastingResolution != other.rayCastingResolution 
+                || this.reflectionResolution != other.reflectionResolution || this.ssrMaxDistance != other.ssrMaxDistance
                 || this.brdfBias != other.brdfBias || this.rayCastThickness != other.rayCastThickness || this.screenFade != other.screenFade
                 || this.rayNum != other.rayNum || this.rayCastStepNum != other.rayCastStepNum || this.hiZMaxLevel != other.hiZMaxLevel
                 || this.ssrNoiseTex != other.ssrNoiseTex || this.resolverNum != other.resolverNum || this.temporalScale != other.temporalScale
@@ -909,6 +914,8 @@ public class DragonPostProcessBase : MonoBehaviour {
 
             this.stochasticScreenSpaceReflection = other.stochasticScreenSpaceReflection;
             this.rayCastingResolution = other.rayCastingResolution;
+            this.reflectionResolution = other.reflectionResolution;
+            this.ssrMaxDistance = other.ssrMaxDistance;
             this.brdfBias = other.brdfBias;
             this.rayCastThickness = other.rayCastThickness;
             this.screenFade = other.screenFade;
@@ -1029,8 +1036,11 @@ public class DragonPostProcessBase : MonoBehaviour {
     protected Color[] adjustedColors;
     protected Texture2D oldFogTex;
 
+
     //SSSR
     protected RenderTargetIdentifier[] sssrMrt;
+    private   int sampleIndex = 0;
+    private   const int sampleCount = 64;
 
     //luma
     private Vector4 lumaFarams = new Vector4();
@@ -1549,6 +1559,30 @@ public class DragonPostProcessBase : MonoBehaviour {
     }
     #endregion
 
+    #region SSSR
+    private float GetHaltonValue(int index, int radix)
+    {
+        float result = 0f;
+        float fraction = 1f / radix;
+
+        while (index > 0)
+        {
+            result += (index % radix) * fraction;
+            index /= radix;
+            fraction /= radix;
+        }
+        return result;
+    }
+    public Vector2 GenerateRandomOffset()
+    {
+        var offset = new Vector2(GetHaltonValue(sampleIndex & 1023, 2), GetHaltonValue(sampleIndex & 1023, 3));
+        if (sampleIndex++ >= sampleCount)
+            sampleIndex = 0;
+        return offset;
+    }
+    #endregion
+
+
     #region init
     public void InitLowwwer()
     {
@@ -1695,6 +1729,7 @@ public class DragonPostProcessBase : MonoBehaviour {
         bool enable = StochasticSSREnable();
         if (enable)
         {
+            mMaterialStochasticSSR.SetFloat(CommonSet.ShaderProperties.ssrMaxDistance, mProperty.ssrMaxDistance);
             mMaterialStochasticSSR.SetFloat(CommonSet.ShaderProperties.brdfBias, mProperty.brdfBias);
             mMaterialStochasticSSR.SetFloat(CommonSet.ShaderProperties.rayCastThickness, mProperty.rayCastThickness);
             mMaterialStochasticSSR.SetFloat(CommonSet.ShaderProperties.screenFade, mProperty.screenFade);

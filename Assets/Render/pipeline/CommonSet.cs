@@ -66,6 +66,7 @@ public class CommonSet : MonoBehaviour{
         public static int sceneTex = Shader.PropertyToID("_SceneTex");
         public static int alphaTex = Shader.PropertyToID("_AlphaTex");
         public static int distortionTex = Shader.PropertyToID("_DistortionTex");
+        public static int sceneCopyTex = Shader.PropertyToID("_SceneCopyTex");
 
         public static int aoBlurXTex = Shader.PropertyToID("_AOBlurXTex");
         public static int aoBlurYTex = Shader.PropertyToID("_AOBlurYTex");
@@ -193,27 +194,33 @@ public class CommonSet : MonoBehaviour{
 
         public static int cameraDepthTex = Shader.PropertyToID("_CameraDepthTexture");
         public static int normalBufferTex = Shader.PropertyToID("_NormalBufferTex");
+        public static int specBufferTex = Shader.PropertyToID("_SpecBufferTex");
 
         public static int hiZbufferTex = Shader.PropertyToID("_HiZbufferTex");
         public static int hiZbufferLevel = Shader.PropertyToID("_HiZbufferLevel");
         public static int rayCastTex0 = Shader.PropertyToID("_RayCastTex0");
         public static int rayCastTex1 = Shader.PropertyToID("_RayCastTex1");
         public static int rayCastTexDepth = Shader.PropertyToID("_RayCastDepth");
+        public static int rayCastSize = Shader.PropertyToID("_RayCastSize");
+        public static int ssrReflectionSize = Shader.PropertyToID("_SSRReflectionSize");
         public static int spatialTex = Shader.PropertyToID("_SpatialTex");
         public static int prevTemporalTex = Shader.PropertyToID("_PrevTemporalTex");
-        public static int temporalTex = Shader.PropertyToID("_TemporalTex");
+        public static int temporalTex = Shader.PropertyToID("_TemporalTex");     
         public static int rayNum = Shader.PropertyToID("_RayNum");
         public static int rayCastStepNum = Shader.PropertyToID("_RayCastStepNum");
         public static int hiZMaxLevel = Shader.PropertyToID("_HiZMaxLevel");
         public static int resolverNum = Shader.PropertyToID("_ResolverNum");
-        public static int jitter = Shader.PropertyToID("_Jitter");
+        public static int ssrMaxDistance = Shader.PropertyToID("_SSRMaxDistance");
         public static int brdfBias = Shader.PropertyToID("_BRDFBias");
         public static int rayCastThickness = Shader.PropertyToID("_RayCastThickness");
         public static int screenFade = Shader.PropertyToID("_ScreenFade");
         public static int temporalScale = Shader.PropertyToID("_TemporalScale");
         public static int temporalWeight = Shader.PropertyToID("_TemporalWeight");
         public static int ssrNoiseTex = Shader.PropertyToID("_SSRNoiseTex");
-        public static int ssrNoiseTexSize = Shader.PropertyToID("_SSRNoiseTexSize");
+        public static int noiseSizeJitter = Shader.PropertyToID("_NoiseSizeJitter");
+        public static int ssrProjectionMatrix = Shader.PropertyToID("_SSRProjectionMatrix");
+        public static int ssrProjectionMatrixInverse = Shader.PropertyToID("_SSRProjectionMatrixInverse");
+        public static int currViewProjectionMatrix = Shader.PropertyToID("_CurrViewProjectionMatrix");
         public static int prevViewProjectionMatrix = Shader.PropertyToID("_PrevViewProjectionMatrix");
     }
     #endregion 

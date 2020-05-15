@@ -80,6 +80,10 @@ public class EnvironmentManagerInspector : Editor
         SerializedProperty field = serializedObject.FindProperty("isLandscaped");
         EditorGUILayout.PropertyField(field, new GUIContent("横屏"));
 
+        EditorGUILayout.Space();
+        field = serializedObject.FindProperty("editorDebug");
+        EditorGUILayout.PropertyField(field, new GUIContent("Debug"));
+
         //bool bValue = EditorGUILayout.Toggle("动态分辨率", manager.dynamicResolution, GUILayout.Height(30));
         //if(bValue != manager.dynamicResolution)
         //{
@@ -95,10 +99,10 @@ public class EnvironmentManagerInspector : Editor
         //}      
 
         // manager.displayFPS = EditorGUILayout.Toggle("显示帧率", manager.displayFPS, GUILayout.Height(30));
-      //  manager.UpdateComponent();
-      //  manager.UpdateResolution(manager.defaultLevel);
-       // manager.UpdateResolution(manager.defaultLevel);
-        
+        //  manager.UpdateComponent();
+        //  manager.UpdateResolution(manager.defaultLevel);
+        // manager.UpdateResolution(manager.defaultLevel);
+
         serializedObject.ApplyModifiedProperties();
     }
 }

@@ -231,7 +231,7 @@ public class UberPass: MonoBehaviour {
         if (initLut)
         {
             pp.GetLutTex(cb);
-            pp.forceUpdate = true;
+            //pp.InitColorGrading();
             initLut = false;
         }            
                       
@@ -330,7 +330,8 @@ public class UberPass: MonoBehaviour {
             cam.fieldOfView = mainCam.fieldOfView;
         }
 #if UNITY_EDITOR
-        InitUberBuffer();
+        if(!EnvironmentManager.Instance.editorDebug)
+            InitUberBuffer();
 #endif
         UpdateUberCommandBuffer();
     }

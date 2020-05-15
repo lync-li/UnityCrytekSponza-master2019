@@ -59,27 +59,25 @@
 				#include "StochasticSSR.cginc"			
 			ENDCG
 		} 
-/*	
+	
 		Pass 
 		{
-			Name"Pass_CombineReflection"
+			Name"CombineReflection"
 			CGPROGRAM
-				#pragma vertex vert
+				#pragma vertex VertDefault
 				#pragma fragment CombineReflectionColor
+				#include "StochasticSSR.cginc"			
 			ENDCG
 		}
 
 		Pass 
 		{
-			Name"Pass_DeBug_SSRColor"
+			Name"DeBugSSRColor"
 			CGPROGRAM
-				#pragma vertex vert
-				#pragma fragment DeBug_SSRColor
+				#pragma vertex VertDefault
+				#pragma fragment DeBugSSRColor
+				#include "StochasticSSR.cginc"			
 			ENDCG
-		}		
-		
-		*/
-		
-		
+		}					
 	}
 }

@@ -162,9 +162,10 @@ public class AlphaPass: MonoBehaviour {
             else
                 cam.SetTargetBuffers(alphaRT.colorBuffer, alphaRT.depthBuffer);            
         }
-        
+
 #if UNITY_EDITOR
-        InitAlphaBuffer();        
+        if (!EnvironmentManager.Instance.editorDebug)
+            InitAlphaBuffer();        
 #endif
         UpdateAlphaCommandBuffer();
     }

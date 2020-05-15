@@ -12,6 +12,9 @@
 #include "UnityGBuffer.cginc"
 #include "ExtendUnityStandardBRDF.cginc"
 
+#include "ExtendUnityImageBasedLighting.cginc"
+#include "UnityShadowLibrary.cginc"
+
 #include "AutoLight.cginc"
 //-------------------------------------------------------------------------------------
 // counterpart for NormalizePerPixelNormal
@@ -486,6 +489,7 @@ struct FragmentOutput
 {
     half4 dest0 : SV_Target0;
     half4 dest1 : SV_Target1;
+	half4 dest2 : SV_Target2;
 };
 
 float3 waveCalc(float3 worldPos)
@@ -664,9 +668,38 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
     half4 c = FABRIC_BRDF_PBS(s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, gi.light, gi.indirect);
 #else
     half4 c = BRDF1_Unity_PBS(s.diffColor, s.specColor, s.oneMinusReflectivity, s.smoothness, s.normalWorld, -s.eyeVec, gi.light, gi.indirect);
-#endif
-    
+#endif    
 
+#if _MRT
+	//c.rgb = s.eyeVec;
+#else	
+	
+	UnityGIInput dd;
+    dd.worldPos = i.worldPos.xyz;
+    dd.worldViewDir = eyeVec;
+    dd.probeHDR[0] = unity_SpecCube0_HDR;
+    dd.boxMin[0].w = 1; // 1 in .w allow to disable blending in UnityGI_IndirectSpecular call since it doesn't work in Deferred
+
+    //float blendDistance = unity_SpecCube1_ProbePosition.w; // will be set to blend distance for this probe
+    #ifdef UNITY_SPECCUBE_BOX_PROJECTION
+   // d.probePosition[0]  = unity_SpecCube0_ProbePosition;
+    //d.boxMin[0].xyz     = unity_SpecCube0_BoxMin - float4(blendDistance,blendDistance,blendDistance,0);
+    //d.boxMax[0].xyz     = unity_SpecCube0_BoxMax + float4(blendDistance,blendDistance,blendDistance,0);
+    #endif
+
+
+    //g.roughness /* perceptualRoughness */   = SmoothnessToPerceptualRoughness(Smoothness);
+    float3 reflUVW   = reflect(eyeVec, s.normalWorld);
+	
+	//Unity_GlossyEnvironment (UNITY_PASS_TEXCUBE(unity_SpecCube0), data.probeHDR[0], glossIn);
+	half roughness = 1 - s.smoothness;
+	half perceptualRoughness = roughness*(1.7 - 0.7*roughness);
+	half4 rgbm = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, s.normalWorld, perceptualRoughness * 6);
+	half3 cubemap = DecodeHDR(rgbm, dd.probeHDR[0]) * occlusion;
+
+	return half4(cubemap,1 );
+#endif
+	
     c.rgb += Emission(i.tex.xy);
 
 #if _RIMENABLE
@@ -719,6 +752,7 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
 	FragmentOutput o;
 	o.dest0 = color;
 	o.dest1 = half4(s.normalWorld * 0.5 + 0.5,s.smoothness);
+	o.dest2 = half4(s.specColor,occlusion);
 	return o;
 #else
 	return color;
@@ -872,6 +906,7 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i)
 	FragmentOutput o;
 	o.dest0 = color;
 	o.dest1 = half4(s.normalWorld * 0.5 + 0.5,s.smoothness);
+	o.dest2 = half4(s.specColor,1);
 	return o;
 #else
 	return color;

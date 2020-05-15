@@ -1,3 +1,4 @@
+#include "UnityCG.cginc"
 #define PI 3.1415926
 #define Inv_PI 0.3183091
 #define Two_PI 6.2831852
@@ -222,7 +223,7 @@ float4 ImportanceSampleGGX(float2 Xi, float Roughness)
 				 
 	float CosTheta = sqrt((1.0 - Xi.y) / (1.0 + (m2 - 1.0) * Xi.y));
 	float SinTheta = sqrt(max(1e-5, 1.0 - CosTheta * CosTheta));
-				 
+	
 	float3 H;
 	H.x = SinTheta * cos(Phi);
 	H.y = SinTheta * sin(Phi);
@@ -245,5 +246,42 @@ inline half GetScreenFadeBord(half2 pos, half value)
 {
     half borderDist = min(1 - max(pos.x, pos.y), min(pos.x, pos.y));
     return saturate(borderDist > value ? 1 : borderDist / value);
+}
+
+half4 Texture2DSampleLevel(Texture2D Tex, SamplerState Sampler, half2 UV, half Mip)
+{
+	return Tex.SampleLevel(Sampler, UV, Mip);
+}
+
+float4 Hierarchical_Z_Trace(int HiZ_Max_Level, int HiZ_Start_Level, int HiZ_Stop_Level, int NumSteps, float thickness, float2 RayCastSize, float3 rayStart, float3 rayDir, Texture2D SceneDepth, SamplerState SceneDepth_Sampler)
+{
+    float SamplerSize = GetMarchSize(rayStart.xy, rayStart.xy + rayDir.xy, RayCastSize);
+    float3 samplePos = rayStart + rayDir * (SamplerSize);
+    int level = HiZ_Start_Level; float mask = 0.0;
+
+    UNITY_LOOP
+    for (int i = 0; i < NumSteps; i++)
+    {
+        float2 cellCount = RayCastSize * exp2(level + 1.0);
+        float newSamplerSize = GetMarchSize(samplePos.xy, samplePos.xy + rayDir.xy, cellCount);
+        float3 newSamplePos = samplePos + rayDir * newSamplerSize;
+        float sampleMinDepth = Texture2DSampleLevel(SceneDepth, SceneDepth_Sampler, newSamplePos.xy, level);
+
+        UNITY_FLATTEN
+        if (sampleMinDepth < newSamplePos.z) {
+            level = min(HiZ_Max_Level, level + 1.0);
+            samplePos = newSamplePos;
+        } else {
+            level--;
+        }
+
+        UNITY_BRANCH
+        if (level < HiZ_Stop_Level) {
+            float delta = (-LinearEyeDepth(sampleMinDepth)) - (-LinearEyeDepth(samplePos.z));
+            mask = delta <= thickness && i > 0.0;
+            return float4(samplePos, mask);
+        }
+    }
+    return float4(samplePos, mask);
 }
 

@@ -19,6 +19,7 @@ sampler2D_float _CameraDepthTexture;
 float4 		_CameraDepthTexture_TexelSize;
 
 sampler2D 	_NormalBufferTex; 
+sampler2D 	_SpecBufferTex; 
 
 half4 		_BloomCurve;
 half 		_BloomIntensity;

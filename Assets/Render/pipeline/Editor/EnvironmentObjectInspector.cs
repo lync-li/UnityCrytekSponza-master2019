@@ -715,7 +715,13 @@ public class EnvironmentObjectInspector : Editor
                 EditorGUILayout.Space();
 
                 field = serializedObject.FindProperty("data.property.rayCastingResolution");
-                EditorGUILayout.PropertyField(field, new GUIContent("分辨率        Resolution"));
+                EditorGUILayout.PropertyField(field, new GUIContent("射线分辨率   Resolution"));
+
+                field = serializedObject.FindProperty("data.property.reflectionResolution");
+                EditorGUILayout.PropertyField(field, new GUIContent("反射分辨率   Resolution"));
+
+                field = serializedObject.FindProperty("data.property.ssrMaxDistance");
+                EditorGUILayout.PropertyField(field, new GUIContent("最大距离     MaxDistance"));
 
                 field = serializedObject.FindProperty("data.property.brdfBias");
                 EditorGUILayout.PropertyField(field, new GUIContent("BRDFBias           "));

@@ -28,15 +28,17 @@ public class DragonPostProcess : DragonPostProcessBase {
 
     public RenderTexture colorRT;
     public RenderTexture normalRT;
+    public RenderTexture specRT;
     public RenderTexture depthRT;
     public RenderTexture depthCopy;
     public RenderTexture depthBackUp;
-    public RenderTexture temporal0;
-    public RenderTexture temporal1;
-    public RenderTargetIdentifier currTemporal;
-    public RenderTargetIdentifier prevTemporal;
 
-    private RenderBuffer[] bufs = new RenderBuffer[2];
+    private RenderTexture[] temporal = new RenderTexture[2];
+    private int currTemporal = 0;
+    private int prevTemporal = 1;
+
+    private RenderBuffer[] bufs = new RenderBuffer[3];
+    private Matrix4x4  prevViewProjectionMatrix;
 
     void OnDisable()
     {
@@ -81,29 +83,34 @@ public class DragonPostProcess : DragonPostProcessBase {
         //}
     }
 
-    void RefreshRT()
+    bool RefreshRT()
     {
         int width = EnvironmentManager.Instance.GetCurrentRTWidth();
         int height = EnvironmentManager.Instance.GetCurrentRTHeight();
 
-        CommonSet.RefreshRT(ref colorRT, width, height, EnvironmentManager.Instance.isSupportDepthTex ? 0 : 24, EnvironmentManager.Instance.halfFormat, false, false, FilterMode.Bilinear, ref forceUpdate, ref cam);
+        bool update = false;
+
+        CommonSet.RefreshRT(ref colorRT, width, height, EnvironmentManager.Instance.isSupportDepthTex ? 0 : 24, EnvironmentManager.Instance.halfFormat, false, false, FilterMode.Bilinear, ref update, ref cam);
  
         if(NormalBufferEnable())
         {
-            CommonSet.RefreshRT(ref normalRT, width, height, 0 , RenderTextureFormat.ARGB32, false, false, FilterMode.Bilinear, ref forceUpdate, ref cam);
+            CommonSet.RefreshRT(ref normalRT, width, height, 0 , RenderTextureFormat.ARGB32, false, false, FilterMode.Bilinear, ref update, ref cam);
+            CommonSet.RefreshRT(ref specRT, width, height, 0, RenderTextureFormat.ARGB32, false, false, FilterMode.Bilinear, ref update, ref cam);
             bufs[0] = colorRT.colorBuffer;
             bufs[1] = normalRT.colorBuffer;
+            bufs[2] = specRT.colorBuffer;
         }
         else
         {
             CommonSet.DeleteRenderTexture(ref normalRT);
+            CommonSet.DeleteRenderTexture(ref specRT);
         }
 
         if (EnvironmentManager.Instance.isSupportDepthTex)
         {
-            CommonSet.RefreshRT(ref depthRT, width, height, 24, RenderTextureFormat.Depth, false, false, FilterMode.Bilinear, ref forceUpdate, ref cam);
+            CommonSet.RefreshRT(ref depthRT, width, height, 24, RenderTextureFormat.Depth, false, false, FilterMode.Bilinear, ref update, ref cam);
             RenderTextureFormat depthRawFormat = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.RFloat) ? RenderTextureFormat.RFloat : RenderTextureFormat.RHalf;
-            CommonSet.RefreshRT(ref depthCopy, width, height, 0, depthRawFormat, true, true, FilterMode.Point, ref forceUpdate, ref cam);         
+            CommonSet.RefreshRT(ref depthCopy, width, height, 0, depthRawFormat, true, true, FilterMode.Point, ref update, ref cam);         
         }
         else
         {
@@ -114,18 +121,18 @@ public class DragonPostProcess : DragonPostProcessBase {
         if (StochasticSSREnable())
         {
             RenderTextureFormat depthRawFormat = SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.RFloat) ? RenderTextureFormat.RFloat : RenderTextureFormat.RHalf;
-            CommonSet.RefreshRT(ref depthBackUp, width, height, 0, depthRawFormat, true, false, FilterMode.Point, ref forceUpdate, ref cam);
-            CommonSet.RefreshRT(ref temporal0, width, height, 0, RenderTextureFormat.ARGBHalf, false, false, FilterMode.Bilinear, ref forceUpdate, ref cam);
-            CommonSet.RefreshRT(ref temporal1, width, height, 0, RenderTextureFormat.ARGBHalf, false, false, FilterMode.Bilinear, ref forceUpdate, ref cam);
-            prevTemporal = new RenderTargetIdentifier(temporal0);
-            currTemporal = new RenderTargetIdentifier(temporal1);
+            CommonSet.RefreshRT(ref depthBackUp, width, height, 0, depthRawFormat, true, false, FilterMode.Point, ref update, ref cam);
+            CommonSet.RefreshRT(ref temporal[0], width / (int)mProperty.reflectionResolution, height / (int)mProperty.reflectionResolution, 0, RenderTextureFormat.ARGBHalf, false, false, FilterMode.Bilinear, ref update, ref cam);
+            CommonSet.RefreshRT(ref temporal[1], width / (int)mProperty.reflectionResolution, height / (int)mProperty.reflectionResolution, 0, RenderTextureFormat.ARGBHalf, false, false, FilterMode.Bilinear, ref update, ref cam);
         }
         else
         {
             CommonSet.DeleteRenderTexture(ref depthBackUp);
-            CommonSet.DeleteRenderTexture(ref temporal0);
-            CommonSet.DeleteRenderTexture(ref temporal0);
+            CommonSet.DeleteRenderTexture(ref temporal[0]);
+            CommonSet.DeleteRenderTexture(ref temporal[1]);
         }
+
+        return update;
     }
 
     public override void UpdatePostProcess()
@@ -222,39 +229,65 @@ public class DragonPostProcess : DragonPostProcessBase {
         }
     }
 
+    void UpdateStochasticSSR()
+    {
+        if(StochasticSSREnable())
+        {
+            Vector2 jitter = GenerateRandomOffset();
+            mMaterialStochasticSSR.SetMatrix(CommonSet.ShaderProperties.prevViewProjectionMatrix, prevViewProjectionMatrix);
+
+            Matrix4x4 projectionMatrix = GL.GetGPUProjectionMatrix(cam.projectionMatrix, false);
+            Matrix4x4 vp = projectionMatrix * cam.worldToCameraMatrix;
+            mMaterialStochasticSSR.SetVector(CommonSet.ShaderProperties.rayCastSize, new Vector4(colorRT.width / (int)mProperty.rayCastingResolution, colorRT.height / (int)mProperty.rayCastingResolution, (float)mProperty.rayCastingResolution / colorRT.width, (float)mProperty.rayCastingResolution / colorRT.height));
+            mMaterialStochasticSSR.SetVector(CommonSet.ShaderProperties.ssrReflectionSize, new Vector4(colorRT.width / (int)mProperty.reflectionResolution, colorRT.height / (int)mProperty.reflectionResolution, (float)mProperty.reflectionResolution / colorRT.width, (float)mProperty.reflectionResolution / colorRT.height));
+            mMaterialStochasticSSR.SetVector(CommonSet.ShaderProperties.noiseSizeJitter, new Vector4(mProperty.ssrNoiseTex.width, mProperty.ssrNoiseTex.height, jitter.x, jitter.y));
+            mMaterialStochasticSSR.SetMatrix(CommonSet.ShaderProperties.clipToWorld, cam.cameraToWorldMatrix * cam.projectionMatrix.inverse);     
+            mMaterialStochasticSSR.SetMatrix(CommonSet.ShaderProperties.ssrProjectionMatrix, projectionMatrix);
+            mMaterialStochasticSSR.SetMatrix(CommonSet.ShaderProperties.ssrProjectionMatrixInverse, projectionMatrix.inverse);            
+            mMaterialStochasticSSR.SetMatrix(CommonSet.ShaderProperties.currViewProjectionMatrix, vp);
+            prevViewProjectionMatrix = vp;
+        }
+    }
+
     public void OnPreRender()
     {
-        RefreshRT();
+        bool update = RefreshRT();
         if (depthCopy)
             depthCopy.DiscardContents();
 
-        if (depthRT)
+        update = update || forceUpdate;
+
+        if (update)
         {
-            if (NormalBufferEnable() && normalRT)
-                cam.SetTargetBuffers(bufs, depthRT.depthBuffer);
+            if (depthRT)
+            {
+                if (NormalBufferEnable() && normalRT)
+                    cam.SetTargetBuffers(bufs, depthRT.depthBuffer);
+                else
+                    cam.SetTargetBuffers(colorRT.colorBuffer, depthRT.depthBuffer);
+            }
             else
-                cam.SetTargetBuffers(colorRT.colorBuffer, depthRT.depthBuffer);
-        }            
-        else
-        {
-            if (NormalBufferEnable() && normalRT)
-                cam.SetTargetBuffers(bufs, colorRT.depthBuffer);
-            else
-                cam.targetTexture = colorRT;
-        }            
+            {
+                if (NormalBufferEnable() && normalRT)
+                    cam.SetTargetBuffers(bufs, colorRT.depthBuffer);
+                else
+                    cam.targetTexture = colorRT;
+            }
+        }  
 
         UpdateOpaqueCommandBuffer();
 
 #if UNITY_EDITOR    
         //为了解决editor刷新问题
-        if (!mMaterialBloom.HasProperty(CommonSet.ShaderProperties.bloomIntensity))
+        if (!mMaterialBloom.HasProperty(CommonSet.ShaderProperties.bloomIntensity) && !EnvironmentManager.Instance.editorDebug)
         {
             forceUpdate = true;
         }
 #endif
  		UpdateVolumetricFog();
         UpdateHeightFog();
-        UpdatePostProcess();
+        UpdateStochasticSSR();
+        UpdatePostProcess();        
     }
 
     void UpdateOpaqueCommandBuffer()
@@ -331,6 +364,13 @@ public class DragonPostProcess : DragonPostProcessBase {
             PrepareHeightFog(cb, colorTexID);
         if (HeightFogEnable() && mProperty.heightFogType == Property.HeightFogType.POSTPROCESS)
             FinishHeightFog(cb);
+
+        if(NormalBufferEnable())
+        {
+            cb.SetRenderTarget(normalRT);
+            cb.ClearRenderTarget(false, true, Color.clear);
+            cb.SetRenderTarget(colorTexID);
+        }
 
         cb.EndSample("OpaquePostProcess");
     }
@@ -452,14 +492,15 @@ public class DragonPostProcess : DragonPostProcessBase {
     }
     void PrepareStochasticSSR(CommandBuffer cb)
     {
+        cb.SetGlobalTexture(CommonSet.ShaderProperties.hiZbufferTex, depthCopy);
+
         for (int i = 1; i < mProperty.hiZMaxLevel; ++i)
-        {
-            cb.SetGlobalTexture(CommonSet.ShaderProperties.hiZbufferTex, depthCopy);
+        {            
             cb.SetGlobalInt(CommonSet.ShaderProperties.hiZbufferLevel, i - 1);
             cb.SetRenderTarget(depthBackUp, i);
             cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0, (int)StochasticSSRPass.HiZBuffer);
             cb.CopyTexture(depthBackUp, 0, i, depthCopy, 0, i);
-        }
+        }       
 
         if (sssrMrt == null)
             sssrMrt = new RenderTargetIdentifier[2];
@@ -472,26 +513,43 @@ public class DragonPostProcess : DragonPostProcessBase {
         cb.GetTemporaryRT(CommonSet.ShaderProperties.rayCastTex1, colorRT.width / (int)mProperty.rayCastingResolution, colorRT.height / (int)mProperty.rayCastingResolution, 0, FilterMode.Point, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
         cb.GetTemporaryRT(CommonSet.ShaderProperties.rayCastTexDepth, colorRT.width / (int)mProperty.rayCastingResolution, colorRT.height / (int)mProperty.rayCastingResolution, 24, FilterMode.Point, RenderTextureFormat.Depth, RenderTextureReadWrite.Linear);
 
+        cb.SetRenderTarget(rayCast0);
+        cb.ClearRenderTarget(false, true, Color.clear);
+        cb.SetRenderTarget(rayCast1);
+        cb.ClearRenderTarget(false, true, new Color(0,0,0,1));
         sssrMrt[0] = rayCast0;
         sssrMrt[1] = rayCast1;
         cb.SetRenderTarget(sssrMrt, depth);
-        cb.SetGlobalTexture(CommonSet.ShaderProperties.sceneTex, colorRT);
+
+        var sceneCopy = new RenderTargetIdentifier(CommonSet.ShaderProperties.sceneCopyTex);
+        cb.GetTemporaryRT(CommonSet.ShaderProperties.sceneCopyTex, colorRT.width, colorRT.height, 0, FilterMode.Bilinear, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
+        cb.CopyTexture(colorRT, sceneCopy);
+        cb.SetGlobalTexture(CommonSet.ShaderProperties.sceneTex, sceneCopy);
+
         cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0, mProperty.rayNum > 1 ? (int)StochasticSSRPass.HierarchicalZTraceMultiSampler : (int)StochasticSSRPass.HierarchicalZTraceSingleSampler);
 
         var spatial = new RenderTargetIdentifier(CommonSet.ShaderProperties.spatialTex);
-        cb.GetTemporaryRT(CommonSet.ShaderProperties.spatialTex, colorRT.width, colorRT.height, 0, FilterMode.Bilinear, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
+        cb.GetTemporaryRT(CommonSet.ShaderProperties.spatialTex, colorRT.width / (int)mProperty.reflectionResolution, colorRT.height / (int)mProperty.reflectionResolution, 0, FilterMode.Bilinear, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
         cb.SetRenderTarget(spatial);
+        cb.ClearRenderTarget(false, true, Color.clear);
         cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR,0, (int)StochasticSSRPass.Spatiofilter);
 
+        prevTemporal = prevTemporal == 1 ? 0 : 1;
+        currTemporal = currTemporal == 1 ? 0 : 1;
+
         cb.SetGlobalTexture(CommonSet.ShaderProperties.spatialTex, spatial);
-        cb.SetGlobalTexture(CommonSet.ShaderProperties.prevTemporalTex, prevTemporal);      
-        cb.SetRenderTarget(currTemporal);
+        cb.SetGlobalTexture(CommonSet.ShaderProperties.prevTemporalTex, temporal[prevTemporal]);      
+        cb.SetRenderTarget(temporal[currTemporal]);
         cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0,(int)StochasticSSRPass.Temporalfilter);
 
-        RenderTargetIdentifier temp = prevTemporal;
-        prevTemporal = currTemporal;
-        currTemporal = temp;
-        cb.SetGlobalTexture(CommonSet.ShaderProperties.temporalTex, prevTemporal);
+        cb.SetGlobalTexture(CommonSet.ShaderProperties.temporalTex, temporal[currTemporal]);
+        cb.SetGlobalTexture(CommonSet.ShaderProperties.specBufferTex, specRT);
+       
+        cb.SetRenderTarget(colorRT);
+        if (mProperty.ssrDebug)
+            cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0, (int)StochasticSSRPass.Debug);
+        else
+            cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0, (int)StochasticSSRPass.Combine);
     }
     void FinishStochasticSSR(CommandBuffer cb)
     {

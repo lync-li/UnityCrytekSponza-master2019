@@ -62,6 +62,7 @@ public class EnvironmentManager : MonoBehaviour {
     public UberPass uberPass;
     public DistortionPass distortionPass;
 
+    public bool editorDebug = false;
     public bool isSupportHalf = true;
     public bool isSupportDepthTex = true;
     public bool isSupportMRT = true;
@@ -103,7 +104,9 @@ public class EnvironmentManager : MonoBehaviour {
         nextCheckTime = Time.realtimeSinceStartup + fpsArrayLen * updateInterval;
 
         for (int i = 0; i < fpsArray.Length; i++)
-            fpsArray[i] = 35;      
+            fpsArray[i] = 35;
+
+        editorDebug = false;
     }
     void OnEnable()
     {
