@@ -14,6 +14,17 @@ static const float2 Directions[8] = {
 	float2(0,1),	
 };
 
+half3 DecodeNormal (half2 enc)
+{
+    half2 fenc = enc*4-2;
+    half f = dot(fenc,fenc);
+    half g = sqrt(1-f/4);
+    half3 n;
+    n.xy = fenc*g;
+    n.z = 1-f/2;
+    return n;
+}
+
 
 //inline float3 FetchViewPos(float2 uv,float2 depth) {	
 //	float z = DecodeFloatRG (depth) * _ProjectionParams.z;
@@ -79,7 +90,9 @@ half4 frag_ao(v2f i, UNITY_VPOS_TYPE screenPos : VPOS) : SV_Target {
 		float3 N = normalize(cross(MinDiff(P, Pr, Pl), MinDiff(P, Pt, Pb)));
 #else
 	float4 normal = tex2D(_NormalBufferTex, i.uv2);
-	float3 N = normal * 2 - 1;
+	float3 N = DecodeNormal(normal.xy);
+	//float3 N = mul((float3x3)(UNITY_MATRIX_I_V),viewNormal);	
+	//float3 N = normal * 2 - 1;
 #endif	
 
 	N = float3(N.x, -N.yz);

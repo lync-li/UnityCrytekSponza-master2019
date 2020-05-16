@@ -29,6 +29,7 @@ Shader "Extend/Standard"
 		_EmissionMap("Emission", 2D) = "white" {}
 
 		_DetailMask("Detail Mask", 2D) = "white" {}
+		[Enum(_DETAIL_MULX2,0,_DETAIL_MUL,1,_DETAIL_ADD,2,_DETAIL_LERP,3)] _DetailBlendMode("DetailBlendMode", Float) = 0	
 
 		_DetailAlbedoMap("Detail Albedo x2", 2D) = "grey" {}
 		_DetailNormalMapScale("Scale", Float) = 1.0
@@ -38,6 +39,9 @@ Shader "Extend/Standard"
 		
 		[Toggle(_VERTEXALPHA)] _VertexAlpha("VertexAlpha", Float) = 0
 		_VertexColorAlpha("VertexColor Alpha", Range(0.0, 2.0)) = 1.0
+		
+		[Toggle(_VERTEXCOLOR)] _VertexColorEnable("VertexColorEnable", Float) = 0
+		[HDR]_VertexColor("VertexColor", Color) = (1,1,1,1)
 
 		[Toggle(_EXTENDALPHA)] _ExtendAlpha("Extend Alpha", Float) = 0	
 		[Toggle(_PLAYER)] _Player("Player", Float) = 0	
@@ -88,7 +92,7 @@ Shader "Extend/Standard"
 			#pragma shader_feature _ _ALPHATEST_ON _ALPHABLEND_ON _ALPHAPREMULTIPLY_ON
 			#pragma shader_feature _EMISSION
 			#pragma shader_feature _METALLICGLOSSMAP
-			#pragma shader_feature ___ _DETAIL_MULX2
+			#pragma shader_feature ___ _DETAIL_MULX2 _DETAIL_MUL _DETAIL_ADD _DETAIL_LERP
 			#pragma shader_feature _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A _SMOOTHNESS_TEXTURE_METAL_G
 			#pragma shader_feature _ _SPECULARHIGHLIGHTS_OFF
 			#pragma shader_feature _ _GLOSSYREFLECTIONS_OFF
@@ -98,6 +102,7 @@ Shader "Extend/Standard"
 			#pragma shader_feature _PLAYER
 			#pragma shader_feature _RECEIVEFOG
 			#pragma shader_feature _RIMENABLE
+			#pragma shader_feature _VERTEXCOLOR
 			
 			#pragma multi_compile __ _ALPHABUFFER
 			#pragma multi_compile __ _MRT
@@ -106,6 +111,8 @@ Shader "Extend/Standard"
 			#pragma multi_compile_fwdbase
 			#pragma multi_compile_fog
 			#pragma multi_compile_instancing
+			
+			#pragma skip_variants VERTEXLIGHT_ON			
 
 			#pragma vertex vertBase
 			#pragma fragment fragBase
@@ -136,7 +143,7 @@ Shader "Extend/Standard"
 			#pragma shader_feature _METALLICGLOSSMAP
 			#pragma shader_feature _ _SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A _SMOOTHNESS_TEXTURE_METAL_G
 			#pragma shader_feature _ _SPECULARHIGHLIGHTS_OFF
-			#pragma shader_feature ___ _DETAIL_MULX2
+			#pragma shader_feature ___ _DETAIL_MULX2 _DETAIL_MUL _DETAIL_ADD _DETAIL_LERP
 			#pragma shader_feature _PARALLAXMAP
 			#pragma shader_feature _EXTENDALPHA
 			#pragma shader_feature _RECEIVEFOG
@@ -144,6 +151,7 @@ Shader "Extend/Standard"
 			//#pragma shader_feature _PLAYER
 			#pragma multi_compile __ _ALPHABUFFER
 			//#pragma multi_compile __ _HEIGHTFOG
+			#pragma multi_compile __ _MRT
 
 			#pragma multi_compile_fwdadd_fullshadows
 			#pragma multi_compile_fog

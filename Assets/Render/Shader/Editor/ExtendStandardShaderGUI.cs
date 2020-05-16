@@ -22,6 +22,14 @@ namespace UnityEditor
             MetallicG,
         }
 
+        public enum DetailBlendMode
+        {
+            Mulx2,
+            Mul,    
+            Add,
+            Lerp
+        }
+
         private static class Styles
         {
             public static GUIContent uvSetLabel = EditorGUIUtility.TrTextContent("UV Set");
@@ -49,6 +57,10 @@ namespace UnityEditor
             public static GUIContent rimEnableText = EditorGUIUtility.TrTextContent("Rim开启", "Rim开启");
             public static GUIContent rimColorText = EditorGUIUtility.TrTextContent("RimColor", "RimColor");
             public static GUIContent rimPowerText = EditorGUIUtility.TrTextContent("RimPower", "RimPower");
+            public static GUIContent vertexColorEnableText = EditorGUIUtility.TrTextContent("顶点色开启", "VertexColorEnable");
+            public static GUIContent vertexColorText = EditorGUIUtility.TrTextContent("Color", "VertexColor");
+            public static GUIContent detailBlendModeText = EditorGUIUtility.TrTextContent("DetailBlendMode", "DetailBlendMode");
+
 
             public static string primaryMapsText = "Main Maps";
             public static string secondaryMapsText = "Secondary Maps";
@@ -75,6 +87,7 @@ namespace UnityEditor
         MaterialProperty emissionColorForRendering = null;
         MaterialProperty emissionMap = null;
         MaterialProperty detailMask = null;
+        MaterialProperty detailBlendMode = null;
         MaterialProperty detailAlbedoMap = null;
         MaterialProperty detailNormalMapScale = null;
         MaterialProperty detailNormalMap = null;
@@ -88,6 +101,8 @@ namespace UnityEditor
         MaterialProperty rimEnable = null;
         MaterialProperty rimColor = null;
         MaterialProperty rimPower = null;
+        MaterialProperty vertexColorEnable = null;
+        MaterialProperty vertexColor = null;
 
 
         MaterialProperty uvSetSecondary = null;
@@ -117,6 +132,7 @@ namespace UnityEditor
             emissionColorForRendering = FindProperty("_EmissionColor", props);
             emissionMap = FindProperty("_EmissionMap", props);
             detailMask = FindProperty("_DetailMask", props);
+            detailBlendMode = FindProperty("_DetailBlendMode", props);
             detailAlbedoMap = FindProperty("_DetailAlbedoMap", props);
             detailNormalMapScale = FindProperty("_DetailNormalMapScale", props);
             detailNormalMap = FindProperty("_DetailNormalMap", props);
@@ -133,6 +149,9 @@ namespace UnityEditor
             rimEnable = FindProperty("_RimEnable", props);
             rimColor = FindProperty("_RimColor", props);
             rimPower = FindProperty("_RimPower", props);
+
+            vertexColorEnable = FindProperty("_VertexColorEnable", props);
+            vertexColor = FindProperty("_VertexColor", props);
 
             uvSetSecondary = FindProperty("_UVSec", props);
         }
@@ -176,15 +195,22 @@ namespace UnityEditor
             }
 
             EditorGUI.BeginChangeCheck();
-            {
-                
-                
+            {              
                 if ((BlendMode)material.GetFloat("_Mode") == BlendMode.Opaque || (BlendMode)material.GetFloat("_Mode") == BlendMode.Cutout)
                 {
                     m_MaterialEditor.ShaderProperty(player, Styles.playerText.text);
                 }
 
                 TwoSidedPopup(material);
+
+                if((BlendMode)material.GetFloat("_Mode") == BlendMode.Opaque || (BlendMode)material.GetFloat("_Mode") == BlendMode.Cutout)
+                {
+                    m_MaterialEditor.ShaderProperty(vertexColorEnable, Styles.vertexColorEnableText.text);
+                    if (vertexColorEnable.floatValue == 1)
+                    {
+                        m_MaterialEditor.ShaderProperty(vertexColor, Styles.vertexColorText.text, MaterialEditor.kMiniTextureFieldLabelIndentLevel);
+                    }
+                }
 
                 if ((BlendMode)material.GetFloat("_Mode") == BlendMode.Fade || (BlendMode)material.GetFloat("_Mode") == BlendMode.Transparent)
                 {
@@ -208,7 +234,7 @@ namespace UnityEditor
                 DoNormalArea();
                 m_MaterialEditor.TexturePropertySingleLine(Styles.heightMapText, heightMap, heightMap.textureValue != null ? heigtMapScale : null);
                 m_MaterialEditor.TexturePropertySingleLine(Styles.occlusionText, occlusionMap, occlusionMap.textureValue != null ? occlusionStrength : null);
-                m_MaterialEditor.TexturePropertySingleLine(Styles.detailMaskText, detailMask);
+             
                 DoEmissionArea(material);
                 DoRimArea(material);
                 EditorGUI.BeginChangeCheck();
@@ -223,6 +249,10 @@ namespace UnityEditor
 
                 // Secondary properties
                 GUILayout.Label(Styles.secondaryMapsText, EditorStyles.boldLabel);
+                m_MaterialEditor.TexturePropertySingleLine(Styles.detailMaskText, detailMask);
+                m_MaterialEditor.ShaderProperty(detailBlendMode, Styles.detailBlendModeText.text);
+                m_MaterialEditor.TextureScaleOffsetProperty(detailMask);            
+
                 m_MaterialEditor.TexturePropertySingleLine(Styles.detailAlbedoText, detailAlbedoMap);
                 m_MaterialEditor.TexturePropertySingleLine(Styles.detailNormalMapText, detailNormalMap, detailNormalMapScale);
                 m_MaterialEditor.TextureScaleOffsetProperty(detailAlbedoMap);
@@ -473,7 +503,45 @@ namespace UnityEditor
             SetKeyword(material, "_NORMALMAP", material.GetTexture("_BumpMap") || material.GetTexture("_DetailNormalMap"));
             SetKeyword(material, "_METALLICGLOSSMAP", material.GetTexture("_MetallicGlossMap"));
             SetKeyword(material, "_PARALLAXMAP", material.GetTexture("_ParallaxMap"));
-            SetKeyword(material, "_DETAIL_MULX2", material.GetTexture("_DetailAlbedoMap") || material.GetTexture("_DetailNormalMap"));
+
+            if(material.GetTexture("_DetailAlbedoMap") || material.GetTexture("_DetailNormalMap"))
+            {
+                switch (material.GetFloat("_DetailBlendMode"))
+                {
+                    case 0:
+                        SetKeyword(material, "_DETAIL_MULX2", true);
+                        SetKeyword(material, "_DETAIL_MUL", false);
+                        SetKeyword(material, "_DETAIL_ADD", false);
+                        SetKeyword(material, "_DETAIL_LERP", false);
+                        break;
+                    case 1:
+                        SetKeyword(material, "_DETAIL_MULX2", false);
+                        SetKeyword(material, "_DETAIL_MUL", true);
+                        SetKeyword(material, "_DETAIL_ADD", false);
+                        SetKeyword(material, "_DETAIL_LERP", false);
+                        break;
+                    case 2:
+                        SetKeyword(material, "_DETAIL_MULX2", false);
+                        SetKeyword(material, "_DETAIL_MUL", false);
+                        SetKeyword(material, "_DETAIL_ADD", true);
+                        SetKeyword(material, "_DETAIL_LERP", false);
+                        break;
+                    case 3:
+                        SetKeyword(material, "_DETAIL_MULX2", false);
+                        SetKeyword(material, "_DETAIL_MUL", false);
+                        SetKeyword(material, "_DETAIL_ADD", false);
+                        SetKeyword(material, "_DETAIL_LERP", true);
+                        break;
+                }
+            }
+            else
+            {
+                SetKeyword(material, "_DETAIL_MULX2", false);
+                SetKeyword(material, "_DETAIL_MUL", false);
+                SetKeyword(material, "_DETAIL_ADD", false);
+                SetKeyword(material, "_DETAIL_LERP", false);
+            }
+           
 
             // A material's GI flag internally keeps track of whether emission is enabled at all, it's enabled but has no effect
             // or is enabled and may be modified at runtime. This state depends on the values of the current flag and emissive color.
@@ -493,6 +561,8 @@ namespace UnityEditor
 			SetKeyword(material, "_PLAYER", ((BlendMode)material.GetFloat("_Mode") == BlendMode.Opaque || (BlendMode)material.GetFloat("_Mode") == BlendMode.Cutout) && material.GetFloat("_Player") == 1);
 
             SetKeyword(material, "_VERTEXALPHA", ((BlendMode)material.GetFloat("_Mode") == BlendMode.Transparent || (BlendMode)material.GetFloat("_Mode") == BlendMode.Fade) && material.GetFloat("_VertexAlpha") == 1);
+
+            SetKeyword(material, "_VERTEXCOLOR", ((BlendMode)material.GetFloat("_Mode") == BlendMode.Opaque || (BlendMode)material.GetFloat("_Mode") == BlendMode.Cutout) && material.GetFloat("_VertexColorEnable") == 1);
         }
 
         static void MaterialChanged(Material material)

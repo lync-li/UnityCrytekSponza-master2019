@@ -650,8 +650,8 @@ public class EnvironmentObjectInspector : Editor
                 field = serializedObject.FindProperty("data.property.maxDistance");
                 EditorGUILayout.PropertyField(field, new GUIContent("最大显示距离 MaxDistance"));
 
-                field = serializedObject.FindProperty("data.property.maxDistance");
-                EditorGUILayout.PropertyField(field, new GUIContent("最大显示距离 MaxDistance"));
+                field = serializedObject.FindProperty("data.property.aoQuality");
+                EditorGUILayout.PropertyField(field, new GUIContent("质量           Quality"));
 
                 field = serializedObject.FindProperty("data.property.aoColor");
                 EditorGUILayout.PropertyField(field, new GUIContent("颜色           Color"));

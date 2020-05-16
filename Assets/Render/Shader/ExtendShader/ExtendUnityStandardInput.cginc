@@ -33,6 +33,7 @@ sampler2D   _BumpMap;
 half        _BumpScale;
 
 sampler2D   _DetailMask;
+float4      _DetailMask_ST;
 sampler2D   _DetailNormalMap;
 half        _DetailNormalMapScale;
 
@@ -53,6 +54,8 @@ half4       _EmissionColor;
 sampler2D   _EmissionMap;
 
 half		_VertexColorAlpha;
+
+half4       _VertexColor;
 
 half4  		_skin_color;
 half4       _cap_sheild_color;
@@ -108,12 +111,13 @@ float4 TexCoords(VertexInput v)
 
 half DetailMask(float2 uv)
 {
-    return tex2D (_DetailMask, uv).a;
+	uv = TRANSFORM_TEX(uv, _DetailMask);
+    return tex2D (_DetailMask, uv).r;
 }
 
 half3 Albedo(float4 texcoords)
 {
-    half3 albedo = _Color.rgb * tex2D (_MainTex, texcoords.xy).rgb;
+    half3 albedo = tex2D (_MainTex, texcoords.xy).rgb;
 #if _DETAIL
     #if (SHADER_TARGET < 30)
         // SM20: instruction count limitation
@@ -133,6 +137,7 @@ half3 Albedo(float4 texcoords)
         albedo = lerp (albedo, detailAlbedo, mask);
     #endif
 #endif
+	albedo *= _Color.rgb;
     return albedo;
 }
 

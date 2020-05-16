@@ -253,6 +253,7 @@ half4 Texture2DSampleLevel(Texture2D Tex, SamplerState Sampler, half2 UV, half M
 	return Tex.SampleLevel(Sampler, UV, Mip);
 }
 
+
 float4 Hierarchical_Z_Trace(int HiZ_Max_Level, int HiZ_Start_Level, int HiZ_Stop_Level, int NumSteps, float thickness, float2 RayCastSize, float3 rayStart, float3 rayDir, Texture2D SceneDepth, SamplerState SceneDepth_Sampler)
 {
     float SamplerSize = GetMarchSize(rayStart.xy, rayStart.xy + rayDir.xy, RayCastSize);

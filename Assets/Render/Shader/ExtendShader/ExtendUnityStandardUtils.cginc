@@ -290,4 +290,22 @@ half3 CalculateSurfaceNormal(half3 position, half3 normal, half2 gradient, half2
 }
 
 
+half3 DecodeNormal (half2 enc)
+{
+    half2 fenc = enc*4-2;
+    half f = dot(fenc,fenc);
+    half g = sqrt(1-f/4);
+    half3 n;
+    n.xy = fenc*g;
+    n.z = 1-f/2;
+    return n;
+}
+
+half2 EncodeNormal (half3 n)
+{
+    half p = sqrt(n.z*8+8);
+    return half2(n.xy/p + 0.5);
+}
+
+
 #endif // UNITY_STANDARD_UTILS_INCLUDED

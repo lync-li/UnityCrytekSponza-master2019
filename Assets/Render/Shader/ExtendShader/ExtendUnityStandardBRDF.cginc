@@ -306,9 +306,12 @@ half4 BRDF1_Unity_PBS (half3 diffColor, half3 specColor, half oneMinusReflectivi
 
     half grazingTerm = saturate(smoothness + (1-oneMinusReflectivity));
     half3 color =   diffColor * (gi.diffuse + light.color * diffuseTerm)
-                    + specularTerm * light.color * FresnelTerm (specColor, lh)
-                    + surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, nv);
-	//color = gi.specular ;
+                    + specularTerm * light.color * FresnelTerm (specColor, lh);
+					
+#ifndef _INDIRECTSPECULAROFF
+	color += surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, nv);
+#endif
+
     return half4(color, 1);
 }
 

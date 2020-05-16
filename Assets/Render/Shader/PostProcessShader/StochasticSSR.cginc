@@ -76,9 +76,9 @@ void HierarchicalZTrace(VaryingsDefault i, out half4 output0 : SV_Target0, out h
 	
 	half4 normalSmoothness = tex2D(_NormalBufferTex, uv);
 	half  roughness = clamp(1 - normalSmoothness.a, 0.02, 1);
-	float3 worldNormal = normalSmoothness.xyz * 2 - 1;
-		
-	float3 viewNormal = mul((float3x3)(UNITY_MATRIX_V), worldNormal);
+	//float3 worldNormal = normalSmoothness.xyz * 2 - 1;		
+	//float3 viewNormal = mul((float3x3)(UNITY_MATRIX_V), worldNormal);
+	float3 viewNormal = DecodeNormal(normalSmoothness.xy);
 	float3 screenPos = half3(uv.xy * 2 - 1, depth.r);	
 	
 	float4 viewPos = mul(_SSRProjectionMatrixInverse, float4(screenPos,1.0));
@@ -192,9 +192,8 @@ float4 Spatiofilter(VaryingsDefault i) : SV_Target
 	
 	half4 normalSmoothness = tex2D(_NormalBufferTex, uv);
 	half  roughness = clamp(1 - normalSmoothness.a, 0.02, 1);
-	float3 worldNormal = normalSmoothness.xyz * 2 - 1;
-		
-	float3 viewNormal = mul((float3x3)(UNITY_MATRIX_V), worldNormal);
+	
+	float3 viewNormal = DecodeNormal(normalSmoothness.xy);
 	float3 screenPos = half3(uv.xy * 2 - 1, depth.r);	
 	
 	float4 viewPos = mul(_SSRProjectionMatrixInverse, float4(screenPos,1.0));
@@ -208,7 +207,7 @@ float4 Spatiofilter(VaryingsDefault i) : SV_Target
 	half2 offsetUV;
 	half2 neighborUV;
 	half4 sampleColor;
-	half4 reflecttionColor;
+	half4 reflectionColor;
 	
 	for (int i = 0; i < _ResolverNum; i++) {
 		offsetUV = mul(offsetRotationMatrix, offset[i] * _SSRReflectionSize.zw);
@@ -221,14 +220,14 @@ float4 Spatiofilter(VaryingsDefault i) : SV_Target
 		///SpatioSampler
 		weight = SSR_BRDF(normalize(-viewPos.xyz), normalize(Hit_ViewPos.xyz - viewPos.xyz), viewNormal, roughness) / max(1e-5, rayCast1.w);
 
-		reflecttionColor += rayCast0 * weight;
+		reflectionColor += rayCast0 * weight;
 		numWeight += weight;
 	}
 
-	reflecttionColor /= numWeight;
-	reflecttionColor = max(1e-5, reflecttionColor);
+	reflectionColor /= numWeight;
+	reflectionColor = max(1e-5, reflectionColor);
 
-	return reflecttionColor;
+	return reflectionColor;
 }
 
 
@@ -240,7 +239,8 @@ half4 Temporalfilter(VaryingsDefault i) : SV_Target
 	//clip(_SSRMaxDistance - LinearEyeDepth(depth.r));
 	
 	half4 normalSmoothness = tex2D(_NormalBufferTex, uv);
-	float3 worldNormal = normalSmoothness.xyz * 2 - 1;		
+	float3 viewNormal = DecodeNormal(normalSmoothness.xy);
+	float3 worldNormal = mul((float3x3)(UNITY_MATRIX_I_V),viewNormal);		
 	float3 worldPos = GetWorldPos(i, Linear01Depth(depth));		
 	/////Get Reprojection Velocity
 	half2 depthVelocity = tex2D(_CameraMotionVectorsTexture, uv);
@@ -288,37 +288,31 @@ half4 Temporalfilter(VaryingsDefault i) : SV_Target
 	half temporalBlendWeight = saturate(_TemporalWeight * (1 - length(velocity) * 8));
 	half4 reflectionColor = lerp(sampleColors[4], prevColor, temporalBlendWeight);
 	
+	reflectionColor = max(1e-5, reflectionColor);
 	return reflectionColor;
 }
-
-
-half3 decode (half2 enc)
-{
-    half2 fenc = enc*4-2;
-    half f = dot(fenc,fenc);
-    half g = sqrt(1-f/4);
-    half3 n;
-    n.xy = fenc*g;
-    n.z = 1-f/2;
-    return n;
-}
-
-
 
 ////////////////////////////////-----CombinePass-----------------------------------------------------------------------------
 half4 CombineReflectionColor(VaryingsDefault i) : SV_Target {
 	half2 uv = i.texcoord.xy;
 
 	float depth = tex2D(_CameraDepthTexture, uv).r;
+	float linear01Depth = Linear01Depth(depth);
+	half4 sceneColor = tex2D(_SceneTex, uv);
+	
+    if(linear01Depth < 0.0001|| linear01Depth>0.9)
+	{
+		return sceneColor;
+	}	
+	
 	float4 normalSmoothness = tex2D(_NormalBufferTex, uv);
 	half4 specular = tex2D(_SpecBufferTex, uv);
+	half  occlusion = specular.a;
 	half  roughness = clamp(1 - normalSmoothness.a, 0.02, 1);
-	float3 worldNormal = normalSmoothness.xyz * 2 - 1;
-	float3 worldPos = GetWorldPos(i, Linear01Depth(depth));	
+	float3 worldPos = GetWorldPos(i,linear01Depth);	
 	
-	//float3 viewNormal = decode(normalSmoothness.xy);
-	//float3 viewNormal = DecodeViewNormalStereo(half4(normalSmoothness.xy,0,0));
-	//float3 worldNormal = mul((float3x3)(UNITY_MATRIX_I_V),viewNormal);
+	float3 viewNormal = DecodeNormal(normalSmoothness.xy);
+	float3 worldNormal = mul((float3x3)(UNITY_MATRIX_I_V),viewNormal);
 	
 	half3 viewDir = normalize(worldPos - _WorldSpaceCameraPos);
 	float3 reflUVW   = reflect(viewDir, worldNormal);
@@ -330,27 +324,16 @@ half4 CombineReflectionColor(VaryingsDefault i) : SV_Target {
     d.probeHDR[0] = unity_SpecCube0_HDR;
     d.boxMin[0].w = 1; // 1 in .w allow to disable blending in UnityGI_IndirectSpecular call since it doesn't work in Deferred
 
-    //float blendDistance = unity_SpecCube1_ProbePosition.w; // will be set to blend distance for this probe
+    float blendDistance = unity_SpecCube1_ProbePosition.w; // will be set to blend distance for this probe
     #ifdef UNITY_SPECCUBE_BOX_PROJECTION
-   // d.probePosition[0]  = unity_SpecCube0_ProbePosition;
-    //d.boxMin[0].xyz     = unity_SpecCube0_BoxMin - float4(blendDistance,blendDistance,blendDistance,0);
-    //d.boxMax[0].xyz     = unity_SpecCube0_BoxMax + float4(blendDistance,blendDistance,blendDistance,0);
+    d.probePosition[0]  = unity_SpecCube0_ProbePosition;
+    d.boxMin[0].xyz     = unity_SpecCube0_BoxMin - float4(blendDistance,blendDistance,blendDistance,0);
+    d.boxMax[0].xyz     = unity_SpecCube0_BoxMax + float4(blendDistance,blendDistance,blendDistance,0);
     #endif
+  
+    Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(1- roughness, d.worldViewDir, worldNormal, specular.rgb);	
 
-
-    //g.roughness /* perceptualRoughness */   = SmoothnessToPerceptualRoughness(Smoothness);
-   //g.reflUVW   = reflect(-worldViewDir, Normal);
-	
-	//Unity_GlossyEnvironment (UNITY_PASS_TEXCUBE(unity_SpecCube0), data.probeHDR[0], glossIn);
-	
-	half perceptualRoughness = roughness*(1.7 - 0.7*roughness);
-	//half4 rgbm = unity_SpecCube0.SampleLevel(samplerunity_SpecCube0, reflUVW, perceptualRoughness * 6);
-	
-	half4 rgbm = UNITY_SAMPLE_TEXCUBE_LOD(unity_SpecCube0, reflUVW, perceptualRoughness * 6);
-	half3 cubemap = DecodeHDR(rgbm, d.probeHDR[0]) * specular.a;
-    //Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(1- roughness, d.worldViewDir, worldNormal, specular.rgb);	
-
-    //half3 cubemap = UnityGI_IndirectSpecular(d, specular.a, g);		
+    half3 cubemap = UnityGI_IndirectSpecular(d, occlusion, g);		
 
 	float roughnessPow2 = roughness * roughness;
     half surfaceReduction;
@@ -364,19 +347,21 @@ half4 CombineReflectionColor(VaryingsDefault i) : SV_Target {
 	half grazingTerm = saturate(1 - roughness + 1 - oneMinusReflectivity);
 	half fresnel = FresnelLerp (specular.rgb, grazingTerm, nv);
 	half3 cubemapColor = surfaceReduction * cubemap * fresnel;
-
-	half4 sceneColor = tex2D(_SceneTex, uv);
+	
+#ifndef _INDIRECTSPECULAROFF
 	sceneColor.rgb = max(1e-5, sceneColor.rgb - cubemapColor.rgb);
+#endif
 
 	half4 ssrColor = tex2D(_TemporalTex, uv);
 	half ssrMask = Square(ssrColor.a);
 	
 	ssrColor *= surfaceReduction * fresnel * tex2D(_AoTex, uv).r ;
 	
-	half3 reflectionColor = lerp(cubemapColor,ssrColor.rgb,ssrMask);//(cubemapColor * (1 - ssrMask)) + (ssrColor.rgb * ssrMask);
+	half3 reflectionColor = (cubemapColor * (1 - ssrMask)) + (ssrColor.rgb * ssrMask);
+	
 	sceneColor.rgb += reflectionColor;
-	return half4(cubemap,1);
-	//return sceneColor;
+	//return half4(cubemapColor.rgb,1);
+	return sceneColor;
 }
 
 ////////////////////////////////-----DeBug_SSRColor Sampler-----------------------------------------------------------------------------

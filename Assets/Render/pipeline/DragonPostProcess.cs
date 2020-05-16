@@ -54,6 +54,7 @@ public class DragonPostProcess : DragonPostProcessBase {
     {
         CommonSet.DeleteRenderTexture(ref colorRT);
         CommonSet.DeleteRenderTexture(ref normalRT);
+		CommonSet.DeleteRenderTexture(ref specRT);
         CommonSet.DeleteRenderTexture(ref depthRT);
         CommonSet.DeleteRenderTexture(ref depthCopy);
         CommonSet.DeleteRenderTexture(ref depthBackUp);
@@ -369,6 +370,8 @@ public class DragonPostProcess : DragonPostProcessBase {
         {
             cb.SetRenderTarget(normalRT);
             cb.ClearRenderTarget(false, true, Color.clear);
+			cb.SetRenderTarget(specRT);
+            cb.ClearRenderTarget(false, true, Color.clear);
             cb.SetRenderTarget(colorTexID);
         }
 
@@ -522,7 +525,7 @@ public class DragonPostProcess : DragonPostProcessBase {
         cb.SetRenderTarget(sssrMrt, depth);
 
         var sceneCopy = new RenderTargetIdentifier(CommonSet.ShaderProperties.sceneCopyTex);
-        cb.GetTemporaryRT(CommonSet.ShaderProperties.sceneCopyTex, colorRT.width, colorRT.height, 0, FilterMode.Bilinear, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
+        cb.GetTemporaryRT(CommonSet.ShaderProperties.sceneCopyTex, colorRT.width, colorRT.height, 0, FilterMode.Bilinear, colorRT.format, RenderTextureReadWrite.Linear);
         cb.CopyTexture(colorRT, sceneCopy);
         cb.SetGlobalTexture(CommonSet.ShaderProperties.sceneTex, sceneCopy);
 

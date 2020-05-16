@@ -204,7 +204,11 @@ inline UnityGI UnityGlobalIllumination (UnityGIInput data, half occlusion, half3
 inline UnityGI UnityGlobalIllumination (UnityGIInput data, half occlusion, half3 normalWorld, Unity_GlossyEnvironmentData glossIn)
 {
     UnityGI o_gi = UnityGI_Base(data, occlusion, normalWorld);
+#if _INDIRECTSPECULAROFF
+	o_gi.indirect.specular = half4(0,0,0,0);
+#else
     o_gi.indirect.specular = UnityGI_IndirectSpecular(data, occlusion, glossIn);
+#endif
     return o_gi;
 }
 
