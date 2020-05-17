@@ -217,6 +217,7 @@ public class CommonSet : MonoBehaviour{
         public static int temporalScale = Shader.PropertyToID("_TemporalScale");
         public static int temporalWeight = Shader.PropertyToID("_TemporalWeight");
         public static int ssrNoiseTex = Shader.PropertyToID("_SSRNoiseTex");
+        public static int ssrPreintegratedTex = Shader.PropertyToID("_SSRPreintegratedTex");
         public static int noiseSizeJitter = Shader.PropertyToID("_NoiseSizeJitter");
         public static int ssrProjectionMatrix = Shader.PropertyToID("_SSRProjectionMatrix");
         public static int ssrProjectionMatrixInverse = Shader.PropertyToID("_SSRProjectionMatrixInverse");

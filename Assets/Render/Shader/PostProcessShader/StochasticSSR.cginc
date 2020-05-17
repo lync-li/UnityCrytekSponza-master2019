@@ -39,6 +39,7 @@ Texture2D _HiZbufferTex;
 SamplerState sampler_HiZbufferTex;
 
 sampler2D _SSRNoiseTex;
+sampler2D _SSRPreintegratedTex;
 half4     _NoiseSizeJitter;
 
 sampler2D _SceneTex;
@@ -85,6 +86,7 @@ void HierarchicalZTrace(VaryingsDefault i, out half4 output0 : SV_Target0, out h
 	//float3 worldNormal = normalSmoothness.xyz * 2 - 1;		
 	//float3 viewNormal = mul((float3x3)(UNITY_MATRIX_V), worldNormal);
 	float3 viewNormal = DecodeNormal(normalSmoothness.xy);
+	
 	float3 screenPos = half3(uv.xy * 2 - 1, depth.r);	
 	
 	float4 viewPos = mul(_SSRProjectionMatrixInverse, float4(screenPos,1.0));
@@ -360,14 +362,18 @@ half4 CombineReflectionColor(VaryingsDefault i) : SV_Target {
 #endif
 
 	half4 ssrColor = tex2D(_TemporalTex, uv);
-	half ssrMask = Square(ssrColor.a);
+	half ssrMask = Square(ssrColor.a);	
 	
-	ssrColor *= surfaceReduction * fresnel * tex2D(_AoTex, uv).r ;
+	half3 EnergyCompensation;
+	half4 PreintegratedGF = half4(PreintegratedDGF_LUT(_SSRPreintegratedTex, EnergyCompensation, specular.rgb, roughness, nv).rgb, 1);
+	
+	//ssrColor *= PreintegratedGF;
+	ssrColor *= surfaceReduction * fresnel * 1 ;//tex2D(_AoTex, uv).r ;
 	
 	half3 reflectionColor = (cubemapColor * (1 - ssrMask)) + (ssrColor.rgb * ssrMask);
 	
 	sceneColor.rgb += reflectionColor;
-	//return half4(cubemapColor.rgb,1);
+	//return half4(ssrColor.rgb,1);
 	return sceneColor;
 }
 

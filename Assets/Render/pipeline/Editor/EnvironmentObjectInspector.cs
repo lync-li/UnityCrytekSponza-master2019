@@ -744,6 +744,9 @@ public class EnvironmentObjectInspector : Editor
                 field = serializedObject.FindProperty("data.property.ssrNoiseTex");
                 EditorGUILayout.PropertyField(field, new GUIContent("噪声图     NoiseTex"));
 
+                field = serializedObject.FindProperty("data.property.preintegratedGFTex");
+                EditorGUILayout.PropertyField(field, new GUIContent("PreintegratedGFTex"));
+
                 field = serializedObject.FindProperty("data.property.resolverNum");
                 EditorGUILayout.PropertyField(field, new GUIContent("ResolverNum"));
 

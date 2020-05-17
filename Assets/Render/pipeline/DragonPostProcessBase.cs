@@ -667,6 +667,7 @@ public class DragonPostProcessBase : MonoBehaviour {
         [Range(0, 10)]
         public int hiZMaxLevel = 10;
         public Texture2D ssrNoiseTex;
+        public Texture2D preintegratedGFTex;
         [Range(1, 9)]
         public int resolverNum = 6;
         [Range(1, 5)]
@@ -777,7 +778,8 @@ public class DragonPostProcessBase : MonoBehaviour {
                 || this.reflectionResolution != other.reflectionResolution || this.ssrMaxDistance != other.ssrMaxDistance
                 || this.brdfBias != other.brdfBias || this.rayCastThickness != other.rayCastThickness || this.screenFade != other.screenFade
                 || this.rayNum != other.rayNum || this.rayCastStepNum != other.rayCastStepNum || this.hiZMaxLevel != other.hiZMaxLevel
-                || this.ssrNoiseTex != other.ssrNoiseTex || this.resolverNum != other.resolverNum || this.temporalScale != other.temporalScale
+                || this.ssrNoiseTex != other.ssrNoiseTex || this.preintegratedGFTex != other.preintegratedGFTex
+                || this.resolverNum != other.resolverNum || this.temporalScale != other.temporalScale
                 || this.temporalWeight != other.temporalWeight || this.ssrDebug != other.ssrDebug)
                 return true;
 
@@ -923,6 +925,7 @@ public class DragonPostProcessBase : MonoBehaviour {
             this.rayCastStepNum = other.rayCastStepNum;
             this.hiZMaxLevel = other.hiZMaxLevel;
             this.ssrNoiseTex = other.ssrNoiseTex;
+            this.preintegratedGFTex = other.preintegratedGFTex;
             this.resolverNum = other.resolverNum;
             this.temporalScale = other.temporalScale;
             this.temporalWeight = other.temporalWeight;
@@ -1737,6 +1740,7 @@ public class DragonPostProcessBase : MonoBehaviour {
             mMaterialStochasticSSR.SetInt(CommonSet.ShaderProperties.rayCastStepNum, mProperty.rayCastStepNum);
             mMaterialStochasticSSR.SetInt(CommonSet.ShaderProperties.hiZMaxLevel, mProperty.hiZMaxLevel);
             mMaterialStochasticSSR.SetTexture(CommonSet.ShaderProperties.ssrNoiseTex, mProperty.ssrNoiseTex);
+            mMaterialStochasticSSR.SetTexture(CommonSet.ShaderProperties.ssrPreintegratedTex, mProperty.preintegratedGFTex);
             mMaterialStochasticSSR.SetInt(CommonSet.ShaderProperties.resolverNum, mProperty.resolverNum);
             mMaterialStochasticSSR.SetFloat(CommonSet.ShaderProperties.temporalScale, mProperty.temporalScale);
             mMaterialStochasticSSR.SetFloat(CommonSet.ShaderProperties.temporalWeight, mProperty.temporalWeight);

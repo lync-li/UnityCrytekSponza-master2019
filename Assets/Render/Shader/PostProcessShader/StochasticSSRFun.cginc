@@ -4,6 +4,10 @@
 #define Two_PI 6.2831852
 #define Inv_Two_PI 0.15915494
 
+#ifndef Multi_Scatter
+#define Multi_Scatter 1
+#endif
+
 float Square(float x)
 {
     return x * x;
@@ -284,5 +288,19 @@ float4 Hierarchical_Z_Trace(int HiZ_Max_Level, int HiZ_Start_Level, int HiZ_Stop
         }
     }
     return float4(samplePos, mask);
+}
+
+half4 PreintegratedDGF_LUT(sampler2D PreintegratedLUT, inout half3 EnergyCompensation, half3 SpecularColor, half Roughness, half NoV)
+{
+    half3 Enviorfilter_GFD = tex2Dlod( PreintegratedLUT, half4(Roughness, NoV, 0.0, 0.0) ).rgb;
+    half3 ReflectionGF = lerp( saturate(50.0 * SpecularColor.g) * Enviorfilter_GFD.ggg, Enviorfilter_GFD.rrr, SpecularColor );
+
+#if Multi_Scatter
+    EnergyCompensation = 1.0 + SpecularColor * (1.0 / Enviorfilter_GFD.r - 1.0);
+#else
+    EnergyCompensation = 1.0;
+#endif
+
+    return half4(ReflectionGF, Enviorfilter_GFD.b);
 }
 
