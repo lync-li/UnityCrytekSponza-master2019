@@ -308,7 +308,8 @@ half4 BRDF1_Unity_PBS (half3 diffColor, half3 specColor, half oneMinusReflectivi
     half3 color =   diffColor * (gi.diffuse + light.color * diffuseTerm)
                     + specularTerm * light.color * FresnelTerm (specColor, lh);
 					
-#ifndef _INDIRECTSPECULAROFF
+#if UNITY_INDIRECT_SPECULAR_OFF && defined(_MRT)
+#else
 	color += surfaceReduction * gi.specular * FresnelLerp (specColor, grazingTerm, nv);
 #endif
 

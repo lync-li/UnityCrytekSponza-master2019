@@ -9,6 +9,13 @@
 #include "ExtendUnityStandardUtils.cginc"
 #include "UnityShadowLibrary.cginc"
 
+#if defined (SHADER_API_MOBILE)
+	#define UNITY_INDIRECT_SPECULAR_OFF 1
+#else
+	#define UNITY_INDIRECT_SPECULAR_OFF 0
+#endif
+
+
 half4 _ShadowColor;
 
 inline half3 DecodeDirectionalSpecularLightmap (half3 color, half4 dirTex, half3 normalWorld, bool isRealtimeLightmap, fixed4 realtimeNormalTex, out UnityLight o_light)
@@ -204,7 +211,8 @@ inline UnityGI UnityGlobalIllumination (UnityGIInput data, half occlusion, half3
 inline UnityGI UnityGlobalIllumination (UnityGIInput data, half occlusion, half3 normalWorld, Unity_GlossyEnvironmentData glossIn)
 {
     UnityGI o_gi = UnityGI_Base(data, occlusion, normalWorld);
-#if _INDIRECTSPECULAROFF
+	
+#if UNITY_INDIRECT_SPECULAR_OFF && defined(_MRT)
 	o_gi.indirect.specular = half4(0,0,0,0);
 #else
     o_gi.indirect.specular = UnityGI_IndirectSpecular(data, occlusion, glossIn);

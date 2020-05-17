@@ -1,12 +1,18 @@
 #include "PostProcessCommon.cginc"
+#include "Funlib.cginc"
 #include "StochasticSSRFun.cginc"
-#include "UnityCG.cginc"
 #include "UnityStandardUtils.cginc"
 #include "UnityStandardBRDF.cginc"
 #include "UnityPBSLighting.cginc"
      
 #define HiZ_Start_Level 2
 #define HiZ_Stop_Level  0
+
+#if defined (SHADER_API_MOBILE)
+	#define UNITY_INDIRECT_SPECULAR_OFF 1
+#else
+	#define UNITY_INDIRECT_SPECULAR_OFF 0
+#endif
 
 int _HiZbufferLevel;
 int _RayNum;
@@ -348,7 +354,8 @@ half4 CombineReflectionColor(VaryingsDefault i) : SV_Target {
 	half fresnel = FresnelLerp (specular.rgb, grazingTerm, nv);
 	half3 cubemapColor = surfaceReduction * cubemap * fresnel;
 	
-#ifndef _INDIRECTSPECULAROFF
+#if UNITY_INDIRECT_SPECULAR_OFF
+#else
 	sceneColor.rgb = max(1e-5, sceneColor.rgb - cubemapColor.rgb);
 #endif
 
