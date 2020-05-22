@@ -18,6 +18,16 @@
 				#include "StochasticSSR.cginc"
 			ENDCG
 		}	
+		
+		Pass 
+		{
+			Name"CopySceneTex"
+			CGPROGRAM
+				#pragma vertex VertDefault
+				#pragma fragment CopySceneTex					
+				#include "StochasticSSR.cginc"				
+			ENDCG
+		} 	
 
 		Pass 
 		{
@@ -75,9 +85,21 @@
 			Name"DeBugSSRColor"
 			CGPROGRAM
 				#pragma vertex VertDefault
-				#pragma fragment DeBugSSRColor
+				#pragma fragment CombineReflectionColor
+				#define DEBUGSSR 1
 				#include "StochasticSSR.cginc"			
 			ENDCG
-		}					
+		}		
+
+		Pass 
+		{
+			Name"DeBugReflection"
+			CGPROGRAM
+				#pragma vertex VertDefault
+				#pragma fragment CombineReflectionColor
+				#define DEBUGREFLECTION 1
+				#include "StochasticSSR.cginc"			
+			ENDCG
+		}				
 	}
 }

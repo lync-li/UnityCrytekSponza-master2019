@@ -501,9 +501,16 @@ public class DragonPostProcess : DragonPostProcessBase {
         {            
             cb.SetGlobalInt(CommonSet.ShaderProperties.hiZbufferLevel, i - 1);
             cb.SetRenderTarget(depthBackUp, i);
-            cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0, (int)StochasticSSRPass.HiZBuffer);
+            cb.DrawMesh(CommonSet.fullscreenTriangle, Matrix4x4.identity, mMaterialStochasticSSR, 0, (int)StochasticSSRPass.HiZBuffer);
             cb.CopyTexture(depthBackUp, 0, i, depthCopy, 0, i);
-        }       
+        }
+
+        var sceneCopy = new RenderTargetIdentifier(CommonSet.ShaderProperties.sceneCopyTex);
+        cb.GetTemporaryRT(CommonSet.ShaderProperties.sceneCopyTex, colorRT.width, colorRT.height, 0, FilterMode.Bilinear, colorRT.format, RenderTextureReadWrite.Linear);
+        cb.SetGlobalTexture(CommonSet.ShaderProperties.sceneTex, colorRT);
+        cb.SetRenderTarget(sceneCopy);
+        cb.DrawMesh(CommonSet.fullscreenTriangle, Matrix4x4.identity, mMaterialStochasticSSR, 0, (int)StochasticSSRPass.CopySceneTex);
+        cb.SetGlobalTexture(CommonSet.ShaderProperties.sceneTex, sceneCopy);
 
         if (sssrMrt == null)
             sssrMrt = new RenderTargetIdentifier[2];
@@ -522,20 +529,15 @@ public class DragonPostProcess : DragonPostProcessBase {
         cb.ClearRenderTarget(false, true, new Color(0,0,0,1));
         sssrMrt[0] = rayCast0;
         sssrMrt[1] = rayCast1;
-        cb.SetRenderTarget(sssrMrt, depth);
+        cb.SetRenderTarget(sssrMrt, depth); 
 
-        var sceneCopy = new RenderTargetIdentifier(CommonSet.ShaderProperties.sceneCopyTex);
-        cb.GetTemporaryRT(CommonSet.ShaderProperties.sceneCopyTex, colorRT.width, colorRT.height, 0, FilterMode.Bilinear, colorRT.format, RenderTextureReadWrite.Linear);
-        cb.CopyTexture(colorRT, sceneCopy);
-        cb.SetGlobalTexture(CommonSet.ShaderProperties.sceneTex, sceneCopy);
-
-        cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0, mProperty.rayNum > 1 ? (int)StochasticSSRPass.HierarchicalZTraceMultiSampler : (int)StochasticSSRPass.HierarchicalZTraceSingleSampler);
+        cb.DrawMesh(CommonSet.fullscreenTriangle, Matrix4x4.identity, mMaterialStochasticSSR, 0, mProperty.rayNum > 1 ? (int)StochasticSSRPass.HierarchicalZTraceMultiSampler : (int)StochasticSSRPass.HierarchicalZTraceSingleSampler);
 
         var spatial = new RenderTargetIdentifier(CommonSet.ShaderProperties.spatialTex);
         cb.GetTemporaryRT(CommonSet.ShaderProperties.spatialTex, colorRT.width / (int)mProperty.reflectionResolution, colorRT.height / (int)mProperty.reflectionResolution, 0, FilterMode.Bilinear, RenderTextureFormat.ARGBHalf, RenderTextureReadWrite.Linear);
         cb.SetRenderTarget(spatial);
         cb.ClearRenderTarget(false, true, Color.clear);
-        cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR,0, (int)StochasticSSRPass.Spatiofilter);
+        cb.DrawMesh(CommonSet.fullscreenTriangle, Matrix4x4.identity, mMaterialStochasticSSR,0, (int)StochasticSSRPass.Spatiofilter);
 
         prevTemporal = prevTemporal == 1 ? 0 : 1;
         currTemporal = currTemporal == 1 ? 0 : 1;
@@ -543,19 +545,22 @@ public class DragonPostProcess : DragonPostProcessBase {
         cb.SetGlobalTexture(CommonSet.ShaderProperties.spatialTex, spatial);
         cb.SetGlobalTexture(CommonSet.ShaderProperties.prevTemporalTex, temporal[prevTemporal]);      
         cb.SetRenderTarget(temporal[currTemporal]);
-        cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0,(int)StochasticSSRPass.Temporalfilter);
+        cb.DrawMesh(CommonSet.fullscreenTriangle, Matrix4x4.identity, mMaterialStochasticSSR, 0,(int)StochasticSSRPass.Temporalfilter);
 
         cb.SetGlobalTexture(CommonSet.ShaderProperties.temporalTex, temporal[currTemporal]);
         cb.SetGlobalTexture(CommonSet.ShaderProperties.specBufferTex, specRT);
        
         cb.SetRenderTarget(colorRT);
-        if (mProperty.ssrDebug)
-            cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0, (int)StochasticSSRPass.Debug);
-        else
-            cb.DrawMesh(GraphicsUtility.mesh, Matrix4x4.identity, mMaterialStochasticSSR, 0, (int)StochasticSSRPass.Combine);
+        if (mProperty.ssrCombine == SSRCombine.Combine)
+            cb.DrawMesh(CommonSet.fullscreenTriangle, Matrix4x4.identity, mMaterialStochasticSSR, 0, (int)StochasticSSRPass.Combine);
+        else if(mProperty.ssrCombine == SSRCombine.SSR)
+            cb.DrawMesh(CommonSet.fullscreenTriangle, Matrix4x4.identity, mMaterialStochasticSSR, 0, (int)StochasticSSRPass.SSRDebug);
+        else if (mProperty.ssrCombine == SSRCombine.Reflection)
+            cb.DrawMesh(CommonSet.fullscreenTriangle, Matrix4x4.identity, mMaterialStochasticSSR, 0, (int)StochasticSSRPass.ReflectionDebug);
     }
     void FinishStochasticSSR(CommandBuffer cb)
     {
+        cb.ReleaseTemporaryRT(CommonSet.ShaderProperties.sceneCopyTex);
         cb.ReleaseTemporaryRT(CommonSet.ShaderProperties.rayCastTex0);
         cb.ReleaseTemporaryRT(CommonSet.ShaderProperties.rayCastTex1);
         cb.ReleaseTemporaryRT(CommonSet.ShaderProperties.rayCastTexDepth);

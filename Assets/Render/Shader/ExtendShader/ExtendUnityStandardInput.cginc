@@ -30,6 +30,7 @@ sampler2D   _DetailAlbedoMap;
 float4      _DetailAlbedoMap_ST;
 
 sampler2D   _BumpMap;
+float4      _BumpMap_ST;
 half        _BumpScale;
 
 sampler2D   _DetailMask;
@@ -52,6 +53,14 @@ half        _UVSec;
 
 half4       _EmissionColor;
 sampler2D   _EmissionMap;
+half4	    _EmissionMap_ST;
+		
+half4		_EmissionColor1;
+sampler2D   _EmissionMap1;
+half4		_EmissionMap1_ST;
+sampler2D	_EmissionAlpha;
+half4		_EmissionAlpha_ST;
+half4		_EmissionBaseColor;
 
 half		_VertexColorAlpha;
 
@@ -105,14 +114,17 @@ float4 TexCoords(VertexInput v)
 {
     float4 texcoord;
     texcoord.xy = TRANSFORM_TEX(v.uv0, _MainTex); // Always source from uv0
+#ifdef _UVANIMATION
+	texcoord.xy += _Time.y * _MainTex_ST.zw;
+#endif
     texcoord.zw = TRANSFORM_TEX(((_UVSec == 0) ? v.uv0 : v.uv1), _DetailAlbedoMap);
     return texcoord;
 }
 
 half DetailMask(float2 uv)
 {
-	uv = TRANSFORM_TEX(uv, _DetailMask);
-    return tex2D (_DetailMask, uv).r;
+	uv = (uv - _MainTex_ST.zw) / _MainTex_ST.xy;
+    return tex2D (_DetailMask, TRANSFORM_TEX(uv, _DetailMask)).r;
 }
 
 half3 Albedo(float4 texcoords)
@@ -194,7 +206,7 @@ half2 MetallicGloss(float2 uv)
         mg.g = tex2D(_MainTex, uv).a;
     #elif _SMOOTHNESS_TEXTURE_METAL_G
 		mg = tex2D(_MetallicGlossMap, uv).rg;
-		mg.g *= 2;
+		//mg.g *= 2;
 	#else
         mg = tex2D(_MetallicGlossMap, uv).ra;
     #endif
@@ -232,17 +244,31 @@ half2 MetallicRough(float2 uv)
 
 half3 Emission(float2 uv)
 {
-#ifndef _EMISSION
-    return 0;
+#if defined(_EMISSION_UNITY)
+	uv = (uv - _MainTex_ST.zw) / _MainTex_ST.xy;
+	return tex2D(_EmissionMap, TRANSFORM_TEX(uv,_EmissionMap)).rgb * _EmissionColor.rgb;
+#elif  defined(_EMISSION_TYPE0)
+	uv = (uv - _MainTex_ST.zw) / _MainTex_ST.xy;
+	half2 uv0 = uv * _EmissionMap_ST.xy + _Time.y * _EmissionMap_ST.zw;
+	half3 color0 = tex2D(_EmissionMap, uv0).rgb * _EmissionColor.rgb;
+	
+	half2 uv1 = uv * _EmissionMap1_ST.xy + _Time.y * _EmissionMap1_ST.zw;
+	half3 color1 = tex2D(_EmissionMap1, uv1).rgb * _EmissionColor1.rgb;
+	
+	half2 uv2 = uv * _EmissionAlpha_ST.xy + _EmissionAlpha_ST.zw;
+	
+	half alpha = tex2D(_EmissionAlpha, uv2).r;
+	return color0 + lerp(_EmissionBaseColor.rgb,color1,alpha);
 #else
-    return tex2D(_EmissionMap, uv).rgb * _EmissionColor.rgb;
+    return 0;
 #endif
 }
 
 #ifdef _NORMALMAP
 half3 NormalInTangentSpace(float4 texcoords, out half3 normalTangent_flake)
 {
-    half3 normalTangent = UnpackScaleNormal(tex2D (_BumpMap, texcoords.xy), _BumpScale);    
+	half2 uv = (texcoords.xy - _MainTex_ST.zw) / _MainTex_ST.xy;
+    half3 normalTangent = UnpackScaleNormal(tex2D (_BumpMap, TRANSFORM_TEX(uv,_BumpMap)), _BumpScale);    
 
 #if _DETAIL && defined(UNITY_ENABLE_DETAIL_NORMALMAP)
     half mask = DetailMask(texcoords.xy);

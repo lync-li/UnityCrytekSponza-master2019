@@ -200,43 +200,8 @@ struct FragmentCommonData
 };
 
 #ifndef UNITY_SETUP_BRDF_INPUT
-    #define UNITY_SETUP_BRDF_INPUT SpecularSetup
+    #define UNITY_SETUP_BRDF_INPUT MetallicSetup
 #endif
-
-inline FragmentCommonData SpecularSetup (float4 i_tex)
-{
-    half4 specGloss = SpecularGloss(i_tex.xy);
-    half3 specColor = specGloss.rgb;
-    half smoothness = specGloss.a;
-
-    half oneMinusReflectivity;
-    half3 diffColor = EnergyConservationBetweenDiffuseAndSpecular (Albedo(i_tex), specColor, /*out*/ oneMinusReflectivity);
-
-    FragmentCommonData o = (FragmentCommonData)0;
-    o.diffColor = diffColor;
-    o.specColor = specColor;
-    o.oneMinusReflectivity = oneMinusReflectivity;
-    o.smoothness = smoothness;
-    return o;
-}
-
-inline FragmentCommonData RoughnessSetup(float4 i_tex)
-{
-    half2 metallicGloss = MetallicRough(i_tex.xy);
-    half metallic = metallicGloss.x;
-    half smoothness = metallicGloss.y; // this is 1 minus the square root of real roughness m.
-
-    half oneMinusReflectivity;
-    half3 specColor;
-    half3 diffColor = DiffuseAndSpecularFromMetallic(Albedo(i_tex), metallic, /*out*/ specColor, /*out*/ oneMinusReflectivity);
-
-    FragmentCommonData o = (FragmentCommonData)0;
-    o.diffColor = diffColor;
-    o.specColor = specColor;
-    o.oneMinusReflectivity = oneMinusReflectivity;
-    o.smoothness = smoothness;
-    return o;
-}
 
 inline FragmentCommonData MetallicSetup (float4 i_tex)
 {
@@ -540,7 +505,7 @@ VertexOutputForwardBase vertForwardBase(VertexInput v)
 
     float4 posWorld = mul(unity_ObjectToWorld, v.vertex);
 	
-#if _Grass
+#if _VERTEXANIMATION
 	float angle = frac(_Time.y * _MoveRate) + posWorld.x * posWorld.y * _MoveRandom;
 	float move = SmoothTriangleWave(angle) * _MoveRange * v.vertex.y * 0.1;
 	v.vertex.xz += move;
@@ -587,6 +552,10 @@ VertexOutputForwardBase vertForwardBase(VertexInput v)
 		o.ambientOrLightmapUV.a = 1;
 #endif
 
+#if _VERTEXCOLOR
+	o.ambientOrLightmapUV.a = v.color.r;
+#endif
+
 #if _ALPHABUFFER && _EXTENDALPHA
     o.projPos = ComputeScreenPos (o.pos);
     COMPUTE_EYEDEPTH(o.projPos.z);
@@ -619,6 +588,10 @@ half4 fragForwardBaseInternal (VertexOutputForwardBase i)
 	
     half facing = dot(-eyeVec, i.tangentToWorldAndPackedData[2].xyz);
     facing = saturate(ceil(facing)) * 2 - 1;
+
+#if _VERTEXCOLOR
+	_Color.rgb *= lerp(_VertexColor.rgb,_Color.rgb,i.ambientOrLightmapUV.a);;
+#endif
 
     FRAGMENT_SETUP(s)
 
@@ -765,7 +738,7 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
 
     float4 posWorld = mul(unity_ObjectToWorld, v.vertex);
 	
-#if _Grass
+#if _VERTEXANIMATION
 	float angle = frac(_Time.y * _MoveRate) + posWorld.x * posWorld.y * _MoveRandom;
 	float move = SmoothTriangleWave(angle) * _MoveRange * v.vertex.y * 0.1;
 	v.vertex.xz += move;
@@ -821,11 +794,11 @@ VertexOutputForwardAdd vertForwardAdd (VertexInput v)
     return o;
 }
 
-#if _MRT
-FragmentOutput fragForwardAddInternal (VertexOutputForwardAdd i)
-#else
+//#if _MRT
+//agmentOutput fragForwardAddInternal (VertexOutputForwardAdd i)
+//else
 half4 fragForwardAddInternal (VertexOutputForwardAdd i)
-#endif
+//#endif
 {
     UNITY_APPLY_DITHER_CROSSFADE(i.pos.xy);
 	
@@ -869,17 +842,17 @@ half4 fragForwardAddInternal (VertexOutputForwardAdd i)
 
 	half4 color = OutputForward(c, s.alpha);
 
-#if _MRT
-	FragmentOutput o;
-	o.dest0 = color;
+//#if _MRT
+	//FragmentOutput o;
+	//o.dest0 = color;
 	//o.dest1 = half4(s.normalWorld * 0.5 + 0.5,s.smoothness);
-	float3 viewNormal = mul((float3x3)(UNITY_MATRIX_V),s.normalWorld);
-	o.dest1 = half4(EncodeNormal(viewNormal),0,s.smoothness);	
-	o.dest2 = half4(s.specColor,1);
-	return o;
-#else
+	//float3 viewNormal = mul((float3x3)(UNITY_MATRIX_V),s.normalWorld);
+	//o.dest1 = half4(EncodeNormal(viewNormal),0,s.smoothness);	
+	//o.dest2 = half4(s.specColor,1);
+	//return o;
+//#else
 	return color;
-#endif
+//#endif
 }
 //
 // Old FragmentGI signature. Kept only for backward compatibility and will be removed soon

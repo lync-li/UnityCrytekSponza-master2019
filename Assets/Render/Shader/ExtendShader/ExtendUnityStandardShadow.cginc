@@ -120,6 +120,7 @@ struct VertexOutputShadowCaster
 struct animData
 {
 	half4 vertex;
+	half4 normal;
 };
 			
 UNITY_INSTANCING_BUFFER_START(Props)
@@ -139,18 +140,21 @@ animData GetBlendAnimPos(VertexInput v) {
 	float x = (v.vertexId + 0.5) * _AnimPosTex_TexelSize.x;
 
 	half4 nextPos = tex2Dlod(_AnimPosTex, half4(x, y, 0, 0));
+	half4 nextNormal = tex2Dlod(_AnimNormalTex, half4(x, y, 0, 0));
+
 	float crossLerp = saturate((_Time.y - animParam0.x) * animParam1.w);
 
 	half4 curPos = 0;
-
+	half4 curNormal = 0;
 	if (crossLerp < 0.99)
 	{
 		animParam1.w = animParam0.w;
 		y = GetY(startEndFrame.z, startEndFrame.w, animParam1);
 		curPos = tex2Dlod(_AnimPosTex, half4(x, y, 0, 0));
-		
+		curNormal = tex2Dlod(_AnimNormalTex, half4(x, y, 0, 0));
 	}
-	data.vertex = lerp(curPos, nextPos, crossLerp);	
+	data.vertex = lerp(curPos, nextPos, crossLerp);
+	data.normal = lerp(curNormal, nextNormal, crossLerp)* 2 - 1;	
 	return data;
 }
 #endif
@@ -184,7 +188,8 @@ void vertShadowCaster (VertexInput v
 	
 #if _GPUANIM
 	animData data = GetBlendAnimPos(v);
-	v.vertex = data.vertex;
+	v.vertex.xyz = data.vertex.xyz;
+	v.normal.xyz = data.normal.xyz;
 #endif	
 	
 #if _Grass

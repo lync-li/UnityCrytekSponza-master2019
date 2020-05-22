@@ -756,8 +756,14 @@ public class EnvironmentObjectInspector : Editor
                 field = serializedObject.FindProperty("data.property.temporalWeight");
                 EditorGUILayout.PropertyField(field, new GUIContent("TemporalWeight"));
 
-                field = serializedObject.FindProperty("data.property.ssrDebug");
-                EditorGUILayout.PropertyField(field, new GUIContent("Debug"));
+                field = serializedObject.FindProperty("data.property.smoothnessStrength");
+                EditorGUILayout.PropertyField(field, new GUIContent("光滑度增强 SmoothnessStrength"));
+
+                field = serializedObject.FindProperty("data.property.specularStrength");
+                EditorGUILayout.PropertyField(field, new GUIContent("反射增强    SpecularStrength"));
+
+                field = serializedObject.FindProperty("data.property.ssrCombine");
+                EditorGUILayout.PropertyField(field, new GUIContent("Combine"));
 
             }
             #endregion

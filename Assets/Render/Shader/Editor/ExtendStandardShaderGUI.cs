@@ -18,7 +18,7 @@ namespace UnityEditor
         public enum SmoothnessMapChannel
         {
             SpecularMetallicAlpha,
-            AlbedoAlpha,
+            //AlbedoAlpha,
             MetallicG,
         }
 
@@ -28,6 +28,13 @@ namespace UnityEditor
             Mul,    
             Add,
             Lerp
+        }
+
+        public enum EmissionMode
+        {
+            None = 0,
+            Unity,
+            Type0
         }
 
         private static class Styles
@@ -42,8 +49,7 @@ namespace UnityEditor
             public static GUIContent smoothnessMapChannelText = EditorGUIUtility.TrTextContent("Source", "Smoothness texture and channel");
             public static GUIContent normalMapText = EditorGUIUtility.TrTextContent("Normal Map", "Normal Map");
             public static GUIContent heightMapText = EditorGUIUtility.TrTextContent("Height Map", "Height Map (G)");
-            public static GUIContent occlusionText = EditorGUIUtility.TrTextContent("Occlusion", "Occlusion (G)");
-            public static GUIContent emissionText = EditorGUIUtility.TrTextContent("Color", "Emission (RGB)");
+            public static GUIContent occlusionText = EditorGUIUtility.TrTextContent("Occlusion", "Occlusion (G)");          
             public static GUIContent detailMaskText = EditorGUIUtility.TrTextContent("Detail Mask", "Mask for Secondary Maps (A)");
             public static GUIContent detailAlbedoText = EditorGUIUtility.TrTextContent("Detail Albedo x2", "Albedo (RGB) multiplied by 2");
             public static GUIContent detailNormalMapText = EditorGUIUtility.TrTextContent("Normal Map", "Normal Map");
@@ -61,6 +67,17 @@ namespace UnityEditor
             public static GUIContent vertexColorText = EditorGUIUtility.TrTextContent("Color", "VertexColor");
             public static GUIContent detailBlendModeText = EditorGUIUtility.TrTextContent("DetailBlendMode", "DetailBlendMode");
 
+            public static GUIContent emissionModeText = EditorGUIUtility.TrTextContent("EmissionMode", "EmissionMode");
+            public static GUIContent emissionText = EditorGUIUtility.TrTextContent("Color", "Emission (RGB)");           
+            public static GUIContent emission1Text = EditorGUIUtility.TrTextContent("Color1", "Emission1 (RGB)");           
+            public static GUIContent emissionAlphaAndBaseColorText = EditorGUIUtility.TrTextContent("EmissionAlphaAndBaseColor", "EmissionAlphaAndBaseColor");
+
+            public static GUIContent vertexAnimationText = EditorGUIUtility.TrTextContent("顶点动画", "");
+            public static GUIContent moveRangeText = EditorGUIUtility.TrTextContent("移动范围", "");
+            public static GUIContent moveRandomText = EditorGUIUtility.TrTextContent("移动随机", "");
+            public static GUIContent moveRateText = EditorGUIUtility.TrTextContent("移动速度", "");
+
+            public static GUIContent uvAnimationText = EditorGUIUtility.TrTextContent("UV动画", "");
 
             public static string primaryMapsText = "Main Maps";
             public static string secondaryMapsText = "Secondary Maps";
@@ -84,8 +101,7 @@ namespace UnityEditor
         MaterialProperty occlusionMap = null;
         MaterialProperty heigtMapScale = null;
         MaterialProperty heightMap = null;
-        MaterialProperty emissionColorForRendering = null;
-        MaterialProperty emissionMap = null;
+      
         MaterialProperty detailMask = null;
         MaterialProperty detailBlendMode = null;
         MaterialProperty detailAlbedoMap = null;
@@ -104,6 +120,20 @@ namespace UnityEditor
         MaterialProperty vertexColorEnable = null;
         MaterialProperty vertexColor = null;
 
+        MaterialProperty emissionMode = null;
+        MaterialProperty emissionColorForRendering = null;
+        MaterialProperty emissionMap = null;
+        MaterialProperty emissionColorForRendering1 = null;
+        MaterialProperty emissionMap1 = null;
+        MaterialProperty emissionBaseColor = null;
+        MaterialProperty emissionAlpha = null;
+
+        MaterialProperty vertexAnimation = null;
+        MaterialProperty moveRange = null;
+        MaterialProperty moveRandom = null;
+        MaterialProperty moveRate = null;
+
+        MaterialProperty uvAnimation = null;
 
         MaterialProperty uvSetSecondary = null;
 
@@ -128,9 +158,8 @@ namespace UnityEditor
             heigtMapScale = FindProperty("_Parallax", props);
             heightMap = FindProperty("_ParallaxMap", props);
             occlusionStrength = FindProperty("_OcclusionStrength", props);
-            occlusionMap = FindProperty("_OcclusionMap", props);
-            emissionColorForRendering = FindProperty("_EmissionColor", props);
-            emissionMap = FindProperty("_EmissionMap", props);
+            occlusionMap = FindProperty("_OcclusionMap", props);           
+
             detailMask = FindProperty("_DetailMask", props);
             detailBlendMode = FindProperty("_DetailBlendMode", props);
             detailAlbedoMap = FindProperty("_DetailAlbedoMap", props);
@@ -152,6 +181,21 @@ namespace UnityEditor
 
             vertexColorEnable = FindProperty("_VertexColorEnable", props);
             vertexColor = FindProperty("_VertexColor", props);
+
+            emissionMode = FindProperty("_EmissionMode", props);
+            emissionColorForRendering = FindProperty("_EmissionColor", props);
+            emissionMap = FindProperty("_EmissionMap", props);          
+            emissionColorForRendering1 = FindProperty("_EmissionColor1", props);
+            emissionMap1 = FindProperty("_EmissionMap1", props);           
+            emissionBaseColor = FindProperty("_EmissionBaseColor", props);
+            emissionAlpha = FindProperty("_EmissionAlpha", props);
+
+            vertexAnimation = FindProperty("_VertexAnimation", props);
+            moveRange = FindProperty("_MoveRange", props);
+            moveRandom = FindProperty("_MoveRandom", props);
+            moveRate = FindProperty("_MoveRate", props);
+
+            uvAnimation = FindProperty("_UVAnimation", props);
 
             uvSetSecondary = FindProperty("_UVSec", props);
         }
@@ -195,7 +239,9 @@ namespace UnityEditor
             }
 
             EditorGUI.BeginChangeCheck();
-            {              
+            {
+                EditorGUILayout.Space();
+
                 if ((BlendMode)material.GetFloat("_Mode") == BlendMode.Opaque || (BlendMode)material.GetFloat("_Mode") == BlendMode.Cutout)
                 {
                     m_MaterialEditor.ShaderProperty(player, Styles.playerText.text);
@@ -227,21 +273,39 @@ namespace UnityEditor
 
                 m_MaterialEditor.ShaderProperty(receiveFog, Styles.receiveFogText.text);
 
-                // Primary properties
-                GUILayout.Label(Styles.primaryMapsText, EditorStyles.boldLabel);
-                DoAlbedoArea(material);
-                DoSpecularMetallicArea();
-                DoNormalArea();
-                m_MaterialEditor.TexturePropertySingleLine(Styles.heightMapText, heightMap, heightMap.textureValue != null ? heigtMapScale : null);
-                m_MaterialEditor.TexturePropertySingleLine(Styles.occlusionText, occlusionMap, occlusionMap.textureValue != null ? occlusionStrength : null);
-             
-                DoEmissionArea(material);
+                DoVertexAnimation();
+
+
                 DoRimArea(material);
-                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.Space();
 
                 EditorGUILayout.Space();
 
+                // Primary properties
+                GUILayout.Label(Styles.primaryMapsText, EditorStyles.boldLabel);
+                DoAlbedoArea(material);
                 m_MaterialEditor.TextureScaleOffsetProperty(albedoMap);
+                m_MaterialEditor.ShaderProperty(uvAnimation, Styles.uvAnimationText.text);
+                EditorGUILayout.Space();
+
+                DoSpecularMetallicArea();
+                EditorGUILayout.Space();
+
+                DoNormalArea();
+
+                EditorGUILayout.Space();
+
+                m_MaterialEditor.TexturePropertySingleLine(Styles.heightMapText, heightMap, heightMap.textureValue != null ? heigtMapScale : null);
+                EditorGUILayout.Space();
+
+                m_MaterialEditor.TexturePropertySingleLine(Styles.occlusionText, occlusionMap, occlusionMap.textureValue != null ? occlusionStrength : null);
+                EditorGUILayout.Space();
+
+                DoEmissionArea(material);
+                EditorGUILayout.Space();
+
+                EditorGUI.BeginChangeCheck();
+                
                 if (EditorGUI.EndChangeCheck())
                     emissionMap.textureScaleAndOffset = albedoMap.textureScaleAndOffset; // Apply the main texture scale and offset to the emission texture as well, for Enlighten's sake
 
@@ -249,13 +313,19 @@ namespace UnityEditor
 
                 // Secondary properties
                 GUILayout.Label(Styles.secondaryMapsText, EditorStyles.boldLabel);
-                m_MaterialEditor.TexturePropertySingleLine(Styles.detailMaskText, detailMask);
                 m_MaterialEditor.ShaderProperty(detailBlendMode, Styles.detailBlendModeText.text);
-                m_MaterialEditor.TextureScaleOffsetProperty(detailMask);            
+                m_MaterialEditor.TexturePropertySingleLine(Styles.detailMaskText, detailMask);              
+                m_MaterialEditor.TextureScaleOffsetProperty(detailMask);
+
+                EditorGUILayout.Space();
 
                 m_MaterialEditor.TexturePropertySingleLine(Styles.detailAlbedoText, detailAlbedoMap);
-                m_MaterialEditor.TexturePropertySingleLine(Styles.detailNormalMapText, detailNormalMap, detailNormalMapScale);
                 m_MaterialEditor.TextureScaleOffsetProperty(detailAlbedoMap);
+
+                EditorGUILayout.Space();
+
+                m_MaterialEditor.TexturePropertySingleLine(Styles.detailNormalMapText, detailNormalMap, detailNormalMapScale);                
+
                 m_MaterialEditor.ShaderProperty(uvSetSecondary, Styles.uvSetLabel.text);
 				m_MaterialEditor.RenderQueueField();				
             }
@@ -272,7 +342,7 @@ namespace UnityEditor
             // NB renderqueue editor is not shown on purpose: we want to override it based on blend mode
             GUILayout.Label(Styles.advancedText, EditorStyles.boldLabel);
             m_MaterialEditor.EnableInstancingField();
-            m_MaterialEditor.DoubleSidedGIField();
+            //m_MaterialEditor.DoubleSidedGIField();
         }
 
         public override void AssignNewShaderToMaterial(Material material, Shader oldShader, Shader newShader)
@@ -355,17 +425,27 @@ namespace UnityEditor
 
             EditorGUI.showMixedValue = false;
         }
-
+        void DoVertexAnimation()
+        {
+            m_MaterialEditor.ShaderProperty(vertexAnimation, Styles.vertexAnimationText.text);
+            if (vertexAnimation.floatValue == 1)
+            {
+                m_MaterialEditor.ShaderProperty(moveRange, Styles.moveRangeText.text, MaterialEditor.kMiniTextureFieldLabelIndentLevel);
+                m_MaterialEditor.ShaderProperty(moveRandom, Styles.moveRandomText.text, MaterialEditor.kMiniTextureFieldLabelIndentLevel);
+                m_MaterialEditor.ShaderProperty(moveRate, Styles.moveRateText.text, MaterialEditor.kMiniTextureFieldLabelIndentLevel);
+            }
+        }
         void DoNormalArea()
         {
             m_MaterialEditor.TexturePropertySingleLine(Styles.normalMapText, bumpMap, bumpMap.textureValue != null ? bumpScale : null);
-            if (bumpScale.floatValue != 1 && UnityEditorInternal.InternalEditorUtility.IsMobilePlatform(EditorUserBuildSettings.activeBuildTarget))
-                if (m_MaterialEditor.HelpBoxWithButton(
-                    EditorGUIUtility.TrTextContent("Bump scale is not supported on mobile platforms"),
-                    EditorGUIUtility.TrTextContent("Fix Now")))
-                {
-                    bumpScale.floatValue = 1;
-                }
+            m_MaterialEditor.TextureScaleOffsetProperty(bumpMap);
+            // if (bumpScale.floatValue != 1 && UnityEditorInternal.InternalEditorUtility.IsMobilePlatform(EditorUserBuildSettings.activeBuildTarget))
+            //  if (m_MaterialEditor.HelpBoxWithButton(
+            //     EditorGUIUtility.TrTextContent("Bump scale is not supported on mobile platforms"),
+            //     EditorGUIUtility.TrTextContent("Fix Now")))
+            // {
+            //      bumpScale.floatValue = 1;
+            // }
         }
 
         void DoAlbedoArea(Material material)
@@ -380,20 +460,44 @@ namespace UnityEditor
         void DoEmissionArea(Material material)
         {
             // Emission for GI?
-            if (m_MaterialEditor.EmissionEnabledProperty())
+            m_MaterialEditor.ShaderProperty(emissionMode, Styles.emissionModeText.text);
+            if ((EmissionMode)material.GetFloat("_EmissionMode") == EmissionMode.Unity)
             {
                 bool hadEmissionTexture = emissionMap.textureValue != null;
 
                 // Texture and HDR color controls
                 m_MaterialEditor.TexturePropertyWithHDRColor(Styles.emissionText, emissionMap, emissionColorForRendering, false);
+                m_MaterialEditor.TextureScaleOffsetProperty(emissionMap);
 
                 // If texture was assigned and color was black set color to white
                 float brightness = emissionColorForRendering.colorValue.maxColorComponent;
                 if (emissionMap.textureValue != null && !hadEmissionTexture && brightness <= 0f)
                     emissionColorForRendering.colorValue = Color.white;
-
                 // change the GI flag and fix it up with emissive as black if necessary
-                m_MaterialEditor.LightmapEmissionFlagsProperty(MaterialEditor.kMiniTextureFieldLabelIndentLevel, true);
+                //m_MaterialEditor.LightmapEmissionFlagsProperty(MaterialEditor.kMiniTextureFieldLabelIndentLevel, true);
+            }
+            else if((EmissionMode)material.GetFloat("_EmissionMode") == EmissionMode.Type0)
+            {
+                //bool hadEmissionTexture = emissionMap.textureValue != null;
+
+                // Texture and HDR color controls
+                m_MaterialEditor.TexturePropertyWithHDRColor(Styles.emissionText, emissionMap, emissionColorForRendering, false);
+                m_MaterialEditor.TextureScaleOffsetProperty(emissionMap);
+                EditorGUILayout.Space();
+
+                m_MaterialEditor.TexturePropertyWithHDRColor(Styles.emission1Text, emissionMap1, emissionColorForRendering1, false);
+                m_MaterialEditor.TextureScaleOffsetProperty(emissionMap1);
+
+                EditorGUILayout.Space();
+                m_MaterialEditor.TexturePropertyWithHDRColor(Styles.emissionAlphaAndBaseColorText, emissionAlpha, emissionBaseColor, false);
+                m_MaterialEditor.TextureScaleOffsetProperty(emissionAlpha);
+
+                //m_MaterialEditor.ShaderProperty(emissionBaseColor, Styles.emissionBaseColorText.text);
+                // m_MaterialEditor.TextureProperty(emissionAlpha, Styles.emissionAlphaText.text);
+                // If texture was assigned and color was black set color to white
+                //float brightness = emissionColorForRendering.colorValue.maxColorComponent;
+                //if (emissionMap.textureValue != null && !hadEmissionTexture && brightness <= 0f)
+                //    emissionColorForRendering.colorValue = Color.white;
             }
         }
 
@@ -418,8 +522,8 @@ namespace UnityEditor
             if (smoothnessMapChannel != null)
             {
                 int smoothnessChannel = (int)smoothnessMapChannel.floatValue;
-                if (smoothnessChannel == (int)SmoothnessMapChannel.AlbedoAlpha)
-                    showSmoothnessScale = true;
+                //if (smoothnessChannel == (int)SmoothnessMapChannel.AlbedoAlpha)
+                //    showSmoothnessScale = true;
             }
 
             int indentation = 2; // align with labels of texture properties
@@ -488,9 +592,9 @@ namespace UnityEditor
         static SmoothnessMapChannel GetSmoothnessMapChannel(Material material)
         {
             int ch = (int)material.GetFloat("_SmoothnessTextureChannel");
-            if (ch == (int)SmoothnessMapChannel.AlbedoAlpha)
-                return SmoothnessMapChannel.AlbedoAlpha;
-            else if(ch == (int)SmoothnessMapChannel.SpecularMetallicAlpha)
+            //if (ch == (int)SmoothnessMapChannel.AlbedoAlpha)
+            //    return SmoothnessMapChannel.AlbedoAlpha;
+            if(ch == (int)SmoothnessMapChannel.SpecularMetallicAlpha)
                 return SmoothnessMapChannel.SpecularMetallicAlpha;
             else 
                 return SmoothnessMapChannel.MetallicG;
@@ -543,16 +647,29 @@ namespace UnityEditor
             }
            
 
+            if((EmissionMode)material.GetFloat("_EmissionMode") == EmissionMode.None)
+            {
+                SetKeyword(material, "_EMISSION_UNITY", false);
+                SetKeyword(material, "_EMISSION_TYPE0", false);
+            }
+            else if((EmissionMode)material.GetFloat("_EmissionMode") == EmissionMode.Unity)
+            {
+                SetKeyword(material, "_EMISSION_UNITY", true);
+                SetKeyword(material, "_EMISSION_TYPE0", false);
+            }
+            else if ((EmissionMode)material.GetFloat("_EmissionMode") == EmissionMode.Type0)
+            {
+                SetKeyword(material, "_EMISSION_UNITY", false);
+                SetKeyword(material, "_EMISSION_TYPE0", true);
+            }
             // A material's GI flag internally keeps track of whether emission is enabled at all, it's enabled but has no effect
             // or is enabled and may be modified at runtime. This state depends on the values of the current flag and emissive color.
             // The fixup routine makes sure that the material is in the correct state if/when changes are made to the mode or color.
-            MaterialEditor.FixupEmissiveFlag(material);
-            bool shouldEmissionBeEnabled = (material.globalIlluminationFlags & MaterialGlobalIlluminationFlags.EmissiveIsBlack) == 0;
-            SetKeyword(material, "_EMISSION", shouldEmissionBeEnabled);
+           // MaterialEditor.FixupEmissiveFlag(material);
 
             if (material.HasProperty("_SmoothnessTextureChannel"))
             {
-                SetKeyword(material, "_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A", GetSmoothnessMapChannel(material) == SmoothnessMapChannel.AlbedoAlpha);
+                //SetKeyword(material, "_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A", GetSmoothnessMapChannel(material) == SmoothnessMapChannel.AlbedoAlpha);
                 SetKeyword(material, "_SMOOTHNESS_TEXTURE_METAL_G", GetSmoothnessMapChannel(material) == SmoothnessMapChannel.MetallicG);
             }           
 

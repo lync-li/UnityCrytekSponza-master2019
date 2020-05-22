@@ -86,18 +86,27 @@ public class DragonPostProcessBase : MonoBehaviour {
     public enum StochasticSSRPass
     {
         HiZBuffer = 0,
+        CopySceneTex,
         HierarchicalZTraceSingleSampler,
         HierarchicalZTraceMultiSampler,
         Spatiofilter,
         Temporalfilter,
         Combine,
-        Debug
+        SSRDebug,
+        ReflectionDebug
     }
 
     public enum RenderResolution
     {
         Full = 1,
         Half = 2
+    }
+
+    public enum SSRCombine
+    {
+        Combine = 1,
+        SSR,
+        Reflection
     }
     #endregion
 
@@ -674,7 +683,12 @@ public class DragonPostProcessBase : MonoBehaviour {
         public float temporalScale = 1.25f;
         [Range(0, 0.99f)]
         public float temporalWeight = 0.98f;
-        public bool ssrDebug = false;
+        [Range(0, 1f)]
+        public float smoothnessStrength = 0f;
+        [Range(1, 3f)]
+        public float specularStrength = 1f;
+
+        public SSRCombine ssrCombine = SSRCombine.Combine;
 
         public bool Diff(Property other)
         {
@@ -780,7 +794,9 @@ public class DragonPostProcessBase : MonoBehaviour {
                 || this.rayNum != other.rayNum || this.rayCastStepNum != other.rayCastStepNum || this.hiZMaxLevel != other.hiZMaxLevel
                 || this.ssrNoiseTex != other.ssrNoiseTex || this.preintegratedGFTex != other.preintegratedGFTex
                 || this.resolverNum != other.resolverNum || this.temporalScale != other.temporalScale
-                || this.temporalWeight != other.temporalWeight || this.ssrDebug != other.ssrDebug)
+                || this.temporalWeight != other.temporalWeight || this.smoothnessStrength != other.smoothnessStrength
+                || this.specularStrength != other.specularStrength || this.ssrCombine != other.ssrCombine
+                )
                 return true;
 
             return false;
@@ -929,7 +945,9 @@ public class DragonPostProcessBase : MonoBehaviour {
             this.resolverNum = other.resolverNum;
             this.temporalScale = other.temporalScale;
             this.temporalWeight = other.temporalWeight;
-            this.ssrDebug = other.ssrDebug;
+            this.smoothnessStrength = other.smoothnessStrength;
+            this.specularStrength = other.specularStrength;
+            this.ssrCombine = other.ssrCombine;
         }
     };
     #endregion
@@ -1744,6 +1762,8 @@ public class DragonPostProcessBase : MonoBehaviour {
             mMaterialStochasticSSR.SetInt(CommonSet.ShaderProperties.resolverNum, mProperty.resolverNum);
             mMaterialStochasticSSR.SetFloat(CommonSet.ShaderProperties.temporalScale, mProperty.temporalScale);
             mMaterialStochasticSSR.SetFloat(CommonSet.ShaderProperties.temporalWeight, mProperty.temporalWeight);
+            mMaterialStochasticSSR.SetFloat(CommonSet.ShaderProperties.specularStrength, mProperty.specularStrength);
+            mMaterialStochasticSSR.SetFloat(CommonSet.ShaderProperties.smoothnessStrength, mProperty.smoothnessStrength);
         }
     }
     void InitHeightFog()

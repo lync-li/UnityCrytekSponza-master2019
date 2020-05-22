@@ -27,6 +27,8 @@ half  _ScreenFade;
 half  _SSRMaxDistance;
 half  _TemporalScale;
 half  _TemporalWeight;
+half  _SmoothnessStrength;
+half  _SpecularStrength;
 half4 _RayCastSize;
 half4 _SSRReflectionSize;
 
@@ -72,6 +74,71 @@ float HierarchicalZBuffer(v2f i) : SV_Target {
 	return max( max(minDepth.x, minDepth.y), max(minDepth.z, minDepth.w) );
 }
 
+half4 CopySceneTex(VaryingsDefault i) : SV_Target {
+	half2 uv = i.texcoord.xy;
+
+	float depth = tex2D(_CameraDepthTexture, uv).r;
+	float linear01Depth = Linear01Depth(depth);
+	half4 sceneColor = tex2D(_SceneTex, uv);
+	
+    if(linear01Depth < 0.0001|| linear01Depth>0.9)
+	{
+		return sceneColor;
+	}	
+	
+	float4 normalSmoothness = tex2D(_NormalBufferTex, uv);
+	half4 specular = tex2D(_SpecBufferTex, uv);
+	half  occlusion = specular.a;
+	half  roughness = clamp(1 - normalSmoothness.a, 0.02, 1);
+	float3 worldPos = GetWorldPos(i,linear01Depth);	
+	
+	float3 viewNormal = DecodeNormal(normalSmoothness.xy);
+	float3 worldNormal = mul((float3x3)(UNITY_MATRIX_I_V),viewNormal);
+	
+	half3 viewDir = normalize(worldPos - _WorldSpaceCameraPos);
+	float3 reflUVW   = reflect(viewDir, worldNormal);
+	half  nv = abs(dot(worldNormal, -viewDir));     
+	
+	UnityGIInput d;
+    d.worldPos = worldPos;
+    d.worldViewDir = -viewDir;
+    d.probeHDR[0] = unity_SpecCube0_HDR;
+   // d.boxMin[0].w = 1; // 1 in .w allow to disable blending in UnityGI_IndirectSpecular call since it doesn't work in Deferred
+
+    //float blendDistance = unity_SpecCube1_ProbePosition.w; // will be set to blend distance for this probe
+  //  #ifdef UNITY_SPECCUBE_BOX_PROJECTION
+  //  d.probePosition[0]  = unity_SpecCube0_ProbePosition;
+   // d.boxMin[0].xyz     = unity_SpecCube0_BoxMin - float4(blendDistance,blendDistance,blendDistance,0);
+  //  d.boxMax[0].xyz     = unity_SpecCube0_BoxMax + float4(blendDistance,blendDistance,blendDistance,0);
+  //  #endif
+  
+    Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(1- roughness, d.worldViewDir, worldNormal, specular.rgb);	
+
+    half3 cubemap = UnityGI_IndirectSpecular(d, occlusion, g);		
+
+	float roughnessPow2 = roughness * roughness;
+    half surfaceReduction;
+#ifdef UNITY_COLORSPACE_GAMMA
+    surfaceReduction = 1.0-0.28*roughnessPow2*roughness;      // 1-0.28*x^3 as approximation for (1/(x^4+1))^(1/2.2) on the domain [0;1]
+#else
+    surfaceReduction = 1.0 / (roughnessPow2*roughnessPow2 + 1.0);           // fade \in [0.5;1]
+#endif
+
+	half oneMinusReflectivity = 1 - SpecularStrength(specular.rgb);
+	half grazingTerm = saturate(1 - roughness + 1 - oneMinusReflectivity);
+	half fresnel = FresnelLerp (specular.rgb, grazingTerm, nv);
+	half3 cubemapColor = surfaceReduction * cubemap * fresnel;
+
+/*
+	half3 EnergyCompensation;
+	half4 PreintegratedGF = half4(PreintegratedDGF_LUT(_SSRPreintegratedTex, EnergyCompensation, specular.rgb, roughness, nv).rgb, 1);	
+	half3 cubemapColor = cubemap * PreintegratedGF.rgb;	
+*/
+	sceneColor.rgb += cubemapColor;
+	
+	return sceneColor;
+}
+
 ///////////////////////////////-----Hierarchical_ZTrace Sampler-----------------------------------------------------------------------------
 void HierarchicalZTrace(VaryingsDefault i, out half4 output0 : SV_Target0, out half4 output1 : SV_Target1)
 {
@@ -82,7 +149,8 @@ void HierarchicalZTrace(VaryingsDefault i, out half4 output0 : SV_Target0, out h
 	clip(_SSRMaxDistance - LinearEyeDepth(depth.r));
 	
 	half4 normalSmoothness = tex2D(_NormalBufferTex, uv);
-	half  roughness = clamp(1 - normalSmoothness.a, 0.02, 1);
+	half  smoothness = _SmoothnessStrength + normalSmoothness.a * (1 - _SmoothnessStrength);
+	half  roughness = clamp(1 - smoothness, 0.02, 1);
 	//float3 worldNormal = normalSmoothness.xyz * 2 - 1;		
 	//float3 viewNormal = mul((float3x3)(UNITY_MATRIX_V), worldNormal);
 	float3 viewNormal = DecodeNormal(normalSmoothness.xy);
@@ -199,7 +267,8 @@ float4 Spatiofilter(VaryingsDefault i) : SV_Target
 	clip(_SSRMaxDistance - LinearEyeDepth(depth.r));
 	
 	half4 normalSmoothness = tex2D(_NormalBufferTex, uv);
-	half  roughness = clamp(1 - normalSmoothness.a, 0.02, 1);
+	half  smoothness = _SmoothnessStrength + normalSmoothness.a * (1 - _SmoothnessStrength);
+	half  roughness = clamp(1 - smoothness, 0.02, 1);
 	
 	float3 viewNormal = DecodeNormal(normalSmoothness.xy);
 	float3 screenPos = half3(uv.xy * 2 - 1, depth.r);	
@@ -330,18 +399,19 @@ half4 CombineReflectionColor(VaryingsDefault i) : SV_Target {
     d.worldPos = worldPos;
     d.worldViewDir = -viewDir;
     d.probeHDR[0] = unity_SpecCube0_HDR;
-    d.boxMin[0].w = 1; // 1 in .w allow to disable blending in UnityGI_IndirectSpecular call since it doesn't work in Deferred
+   // d.boxMin[0].w = 1; // 1 in .w allow to disable blending in UnityGI_IndirectSpecular call since it doesn't work in Deferred
 
-    float blendDistance = unity_SpecCube1_ProbePosition.w; // will be set to blend distance for this probe
-    #ifdef UNITY_SPECCUBE_BOX_PROJECTION
-    d.probePosition[0]  = unity_SpecCube0_ProbePosition;
-    d.boxMin[0].xyz     = unity_SpecCube0_BoxMin - float4(blendDistance,blendDistance,blendDistance,0);
-    d.boxMax[0].xyz     = unity_SpecCube0_BoxMax + float4(blendDistance,blendDistance,blendDistance,0);
-    #endif
+   // float blendDistance = unity_SpecCube1_ProbePosition.w; // will be set to blend distance for this probe
+  //  #ifdef UNITY_SPECCUBE_BOX_PROJECTION
+  //  d.probePosition[0]  = unity_SpecCube0_ProbePosition;
+  //  d.boxMin[0].xyz     = unity_SpecCube0_BoxMin - float4(blendDistance,blendDistance,blendDistance,0);
+  //  d.boxMax[0].xyz     = unity_SpecCube0_BoxMax + float4(blendDistance,blendDistance,blendDistance,0);
+  //  #endif
   
     Unity_GlossyEnvironmentData g = UnityGlossyEnvironmentSetup(1- roughness, d.worldViewDir, worldNormal, specular.rgb);	
 
     half3 cubemap = UnityGI_IndirectSpecular(d, occlusion, g);		
+	
 
 	float roughnessPow2 = roughness * roughness;
     half surfaceReduction;
@@ -356,25 +426,38 @@ half4 CombineReflectionColor(VaryingsDefault i) : SV_Target {
 	half fresnel = FresnelLerp (specular.rgb, grazingTerm, nv);
 	half3 cubemapColor = surfaceReduction * cubemap * fresnel;
 	
-#if UNITY_INDIRECT_SPECULAR_OFF
-#else
+
+
+	half3 EnergyCompensation;
+	//half4 PreintegratedGF = half4(PreintegratedDGF_LUT(_SSRPreintegratedTex, EnergyCompensation, specular.rgb, roughness, nv).rgb, 1);
+	//half3 cubemapColor = PreintegratedGF * cubemap;
+	
+//#if UNITY_INDIRECT_SPECULAR_OFF
+//#else
 	sceneColor.rgb = max(1e-5, sceneColor.rgb - cubemapColor.rgb);
-#endif
+//#endif
 
 	half4 ssrColor = tex2D(_TemporalTex, uv);
-	half ssrMask = Square(ssrColor.a);	
+	half  ssrMask = Square(ssrColor.a);		
 	
-	half3 EnergyCompensation;
-	half4 PreintegratedGF = half4(PreintegratedDGF_LUT(_SSRPreintegratedTex, EnergyCompensation, specular.rgb, roughness, nv).rgb, 1);
+	half  smoothness = _SmoothnessStrength + normalSmoothness.a * (1 - _SmoothnessStrength);
+	half  ssrRoughness = clamp(1 - smoothness, 0.02, 1);
+	half3 ssrSpecular = specular.rgb * _SpecularStrength;
 	
-	//ssrColor *= PreintegratedGF;
-	ssrColor *= surfaceReduction * fresnel * 1 ;//tex2D(_AoTex, uv).r ;
+	half4 ssrPreintegratedGF = half4(PreintegratedDGF_LUT(_SSRPreintegratedTex, EnergyCompensation, ssrSpecular, ssrRoughness, nv).rgb, 1);
+	ssrColor *= ssrPreintegratedGF;
+	//ssrColor *= surfaceReduction * fresnel * 1 ;//tex2D(_AoTex, uv).r ;
 	
 	half3 reflectionColor = (cubemapColor * (1 - ssrMask)) + (ssrColor.rgb * ssrMask);
 	
+#if DEBUGREFLECTION
+	return half4(reflectionColor,1);
+#elif DEBUGSSR
+	return ssrColor * ssrMask;
+#else
 	sceneColor.rgb += reflectionColor;
-	//return half4(ssrColor.rgb,1);
 	return sceneColor;
+#endif	
 }
 
 ////////////////////////////////-----DeBug_SSRColor Sampler-----------------------------------------------------------------------------

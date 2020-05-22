@@ -231,7 +231,7 @@ public class UberPass: MonoBehaviour {
         if (initLut)
         {
             pp.GetLutTex(cb);
-            //pp.InitColorGrading();
+            pp.forceUpdate = true;
             initLut = false;
         }            
                       
